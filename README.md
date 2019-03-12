@@ -8,6 +8,7 @@ Run inside a folder with the following required input files:
 - pins.ll: File with the coordinates of the region of intererest.
 - batch_tops.config: file with interferogram parameters. You can modify it with the appropiate parameters for your site.
 - (optional) master_image: a file containing the date of the master image with format YYYYMMDD.
+- Intarsis.config: configuration file with some parameters for the automatization of the processing.
 
 # Description of the routines:
 ## Intarsis_01_file_preparation
