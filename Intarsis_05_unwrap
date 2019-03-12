@@ -6,10 +6,11 @@
 
 # TODO: include generation of unwrap_intf.csh, allow enable or disable interpolation
 # TODO: include coherence thresholds.
+# TODO: Include thread number as a global parameter
 
 NUM_THREADS=20
 
-which unwrap_intf2.csh &> /dev/null
+which unwrap_intf.csh &> /dev/null
 if [ "$?" -eq 0 ]; then
 	echo "unwrap_intf.csh is found"
 else
@@ -34,9 +35,5 @@ cd $IW/intf_all
 rm intflist
 ls -d 2*/ > intflist
 sed -i 's/\///g' intflist
-
-for i in $(cat intflist); do
-echo $i
-done
 
 unwrap_parallel.csh intflist $NUM_THREADS
