@@ -34,6 +34,8 @@ else
 	exit
 fi
 
+echo "$(date "+%d/%m/%y %H:%M") - Run Allign $IW" >> Intarsis_stage
+
 # Creating Directories
 rm -r $IW &> /dev/null # Cleaning from previous processings
 mkdir $IW $IW/raw $IW/topo

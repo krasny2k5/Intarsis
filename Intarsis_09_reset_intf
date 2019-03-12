@@ -15,10 +15,13 @@ else
 	exit
 fi
 
+echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> Intarsis_stage
+
 rm -rf $IW/intf*
 rm $IW/text*
 rm $IW/baseline.ps $IW/batch_tops.config $IW/gmt.history
 rm $IW/one.in
 #topo folder
 rm $IW/topo/topo_ra.pdf $IW/topo/topo_ra.grd $IW/topo/trans.dat $IW/topo/gmt.history $IW/topo/master.PRM $IW/topo/*.LED
+
 

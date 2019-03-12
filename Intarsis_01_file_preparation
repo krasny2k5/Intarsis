@@ -21,6 +21,9 @@ if [ -z SAFE_filelist ]; then
 	exit
 fi
 
+echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > Intarsis_stage
+
+
 cp dem.grd topo/dem.grd
 
 cp pins.ll data/

@@ -28,6 +28,8 @@ else
 	exit
 fi
 
+echo "$(date "+%d/%m/%y %H:%M") - Run Mask generation $IW" >> Intarsis_stage
+
 cd $IW
 if [ ! -f corr_stack.grd ]; then
 	ls intf_all/201*/corr.grd > corr.grd_list

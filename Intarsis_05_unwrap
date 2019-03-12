@@ -10,6 +10,8 @@
 
 NUM_THREADS=20
 
+
+
 which unwrap_intf.csh &> /dev/null
 if [ "$?" -eq 0 ]; then
 	echo "unwrap_intf.csh is found"
@@ -30,6 +32,8 @@ else
     	echo "You must specify the IW as F1,F2 or F3"
         exit
 fi
+
+echo "$(date "+%d/%m/%y %H:%M") - Run unwrap $IW" >> Intarsis_stage
 
 cd $IW/intf_all
 rm intflist

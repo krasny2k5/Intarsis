@@ -14,6 +14,8 @@ else
 	exit
 fi
 
+echo "$(date "+%d/%m/%y %H:%M") - Run SBAS $IW" >> Intarsis_stage
+
 rm -r SBAS &> /dev/null
 mkdir SBAS &> /dev/null
 cd SBAS
@@ -42,9 +44,13 @@ XDIM=$(gmt grdinfo $UNWRAP_GRD | grep x_max | awk '{print $11}')
 YDIM=$(gmt grdinfo $UNWRAP_GRD | grep y_max | awk '{print $11}')
 MM=$(cat ../$IW/raw/data.in | head -n 1 | cut -c 16-23)
 WAVELENGTH=$(cat ../$IW/raw/S1_"$MM"_ALL_$IW.PRM | grep radar_wavelength | awk '{print $3}')
+RNG_SAMP_RATE=$(cat ../$IW/raw/S1_"$MM"_ALL_$IW.PRM | grep rng_samp_rate | awk '{print $3}' | head -n 1)
 RANGE=888126 # TODO: extract from Supermaster.prm
 INC=40
 SMOOTH=2
+ATM=3
+
+
 
 echo "# of interferograms: " $N_INTF
 echo "# of SLC: " $N_SLC
@@ -55,4 +61,4 @@ echo "Incidence :" $INC
 echo "Smooth: " $SMOOTH
 
 echo "running SBAS code"
-sbas intf.tab scene.tab $N_INTF $N_SLC $XDIM $YDIM -range $RANGE -incidence $INC -wavelength $WAVELENGTH -smooth $SMOOTH -rms -dem
+sbas intf.tab scene.tab $N_INTF $N_SLC $XDIM $YDIM -atm $ATM -range $RANGE -incidence $INC -wavelength $WAVELENGTH -smooth $SMOOTH -rms -dem

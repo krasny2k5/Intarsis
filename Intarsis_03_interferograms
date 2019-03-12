@@ -4,7 +4,10 @@
 # You must input as arguments the IW as F1, F2 or F3 and the master date as YYYYMMDD
 # Also, a master_image file containing the date of MM is possible to use.
 
+# TODO: introduce Bperp and B_T parameters in interferogram generation.
+
 NUM_THREADS=28 # NUMBER OF THREADS FOR INTERFEROGRAM GENETATION
+
 
 if [ -z $1 ]; then
 	echo "Must specify IW and MM date as parameters"
@@ -35,6 +38,9 @@ else
 	echo "Error in Master Master date"
 	exit
 fi
+
+echo "$(date "+%d/%m/%y %H:%M") - Run Inteferogram generation for $IW" >> Intarsis_stage
+
 cd $IW
 select_pairs.csh baseline_table.dat 120 150 # B_T and B_perp
 echo "Displaying last two lines of intf.in, check for the correct names"
