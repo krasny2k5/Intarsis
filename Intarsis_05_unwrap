@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# This program unwrap the phase using snaphu.csh or snaphu_interp.csh
+# It uses parallel to spawn the unwrapping across several threads.
+# A script called unwrap_intf.csh is needed in order to run this program.
+
+# TODO: include generation of unwrap_intf.csh, allow enable or disable interpolation
+# TODO: include coherence thresholds.
+
+NUM_THREADS=20
+
+which unwrap_intf2.csh &> /dev/null
+if [ "$?" -eq 0 ]; then
+	echo "unwrap_intf.csh is found"
+else
+	echo "unwrap_intf.csh not found, exiting"
+	exit
+fi
+
+if [ -z $1 ]; then
+        echo "Must specify IW as parameter"
+        echo "Example: Intarsis_05_unwrap F1"
+        exit
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+        IW=$1
+	echo "Selected $IW"
+        echo "Unwrapping interferograms from $IW"
+else
+    	echo "You must specify the IW as F1,F2 or F3"
+        exit
+fi
+
+cd $IW/intf_all
+rm intflist
+ls -d 2*/ > intflist
+sed -i 's/\///g' intflist
+
+for i in $(cat intflist); do
+echo $i
+done
+
+unwrap_parallel.csh intflist $NUM_THREADS
