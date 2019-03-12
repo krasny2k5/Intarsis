@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# This program reset the intf step for a specified IW.
+
+if [ -z $1 ]; then
+	echo "Must specify IW as parameter"
+	echo "Example: Intarsis_09_reset_intf F1"
+	exit
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	echo "Selected $IW"
+	echo "Removing interferograms from $IW"
+else
+	echo "You must specify the IW as F1,F2 or F3"
+	exit
+fi
+
+rm -rf $IW/intf*
+rm $IW/text*
+rm $IW/baseline.ps $IW/batch_tops.config $IW/gmt.history
+rm $IW/one.in
+#topo folder
+rm $IW/topo/topo_ra.pdf $IW/topo/topo_ra.grd $IW/topo/trans.dat $IW/topo/gmt.history $IW/topo/master.PRM $IW/topo/*.LED
+

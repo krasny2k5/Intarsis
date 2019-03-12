@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# This program reset the unwrap step for a specified IW.
+
+if [ -z $1 ]; then
+        echo "Must specify IW as parameter"
+        echo "Example: Intarsis_09_reset_unwrap F1"
+        exit
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+        IW=$1
+	echo "Selected $IW"
+        echo "Removing unwrap step from $IW"
+else
+    	echo "You must specify the IW as F1,F2 or F3"
+        exit
+fi
+
+cd $IW/intf_all
+for i in $(ls -d 2*/); do
+
+cd $i
+rm mask2_patch.grd mask_def_patch.grd phase_patch.grd unwrap.cpt unwrap.grd unwrap.pdf &> /dev/null
+cd ..
+
+done

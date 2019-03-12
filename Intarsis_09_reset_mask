@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# This program reset the mask step for a specified IW.
+
+if [ -z $1 ]; then
+        echo "Must specify IW as parameter"
+        echo "Example: Intarsis_09_reset_mask F1"
+        exit
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+        IW=$1
+	echo "Selected $IW"
+        echo "Removing mask from $IW"
+else
+    	echo "You must specify the IW as F1,F2 or F3"
+        exit
+fi
+
+cd $IW
+rm corr_stack.grd std.grd mask_def.grd
+
+cd intf_all
+for i in $(ls -d 2*/); do
+
+cd $i
+rm mask_def.grd
+cd ..
+
+done
