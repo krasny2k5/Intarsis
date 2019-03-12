@@ -5,8 +5,8 @@
 # example: Intarsis_04_mask F2 0.1
 
 if [ -z $1 ]; then
-	echo "Must specify IW as parameter"
-	echo "Example: 09_reset_intf F1"
+	echo "Must specify IW and coherence threshold as parameter"
+	echo "Example: Intarsis_04_mask F2"
 	exit
 elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
@@ -27,12 +27,12 @@ else
 	echo "You must specify a coherence threshold between 0.001 and 0.999"
 	exit
 fi
-cd $IW
 
-if [ -z corr_stack.grd ]; then
+cd $IW
+if [ ! -f corr_stack.grd ]; then
 	ls intf_all/201*/corr.grd > corr.grd_list
 	echo "Generating corr_stack.grd"	
-	#stack.csh corr.grd_list 1 corr_stack.grd std.grd
+	stack.csh corr.grd_list 1 corr_stack.grd std.grd
 else
 	echo "Detected previous corr_stack.grd"
 	echo "If you want to remove previous corr_stack.grd remove the file from $IW folder"
