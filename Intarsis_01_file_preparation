@@ -6,10 +6,21 @@
 
 mkdir data orbit reframed topo merge
 
-#Choose DEM
-#cp dem_mdt05.grd topo/dem.grd  # For custom_dem
-#cp dem_gmtsarweb.grd topo/dem.grd # For GMT page dem
-#cp dem_gmtv1.grd topo/dem.grd # For GMT page dem
+#check for DEM in folder
+if [ -z dem.grd ]; then
+	echo "DEM is missing, please rename it to dem.grd and try again"
+	exit
+fi
+#Check for pins.ll file
+if [ -z pins.ll ]; then
+	echo "pins.ll file is missing. Create in the program's folder and try again"
+	exit
+fi
+if [ -z SAFE_filelist ]; then
+	echo "SAFE_filelist file is missing. Create a SAFE_filelist containing full path to all SLC folers and try again"
+	exit
+fi
+
 cp dem.grd topo/dem.grd
 
 cp pins.ll data/
