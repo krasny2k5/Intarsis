@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# This script generates the interferograms for a specified IW.
+# You must input as arguments the IW as F1, F2 or F3 and the master date as YYYYMMDD
+# Also, a master_image file containing the date of MM is possible to use.
+
+NUM_THREADS=28 # NUMBER OF THREADS FOR INTERFEROGRAM GENETATION
+
+if [ -z $1 ]; then
+	echo "Must specify IW and MM date as parameters"
+	echo "Example: 02_allign F1 YYYYMMDD"
+	exit
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	IWN=$(echo $IW | cut -c 2
+	echo "Selected $IW"
+	echo "Removing interferograms from $IW"
+else
+	echo "You must specify the IW as F1,F2 or F3"
+	exit
+fi
+
+if [ -z $2 ]; then
+	echo "Must specify IW and MM date as parameters"
+	echo "Example: 02_allign F1 YYYYMMDD"
+	exit
+elif [ -e master_image ]; then
+	MM=$(cat master_image)
+	echo "master image file detected: $MM"
+elif [[ $(echo "$2 > 20140000" | bc -l) == 1 ]] && [[ $(echo "$2 < 20250000" | bc -l) == 1 ]]; then
+	echo "Master Master set to $2"
+	MM=$2
+else
+	echo "Error in Master Master date"
+	exit
+fi
+cd $IW
+select_pairs.csh baseline_table.dat 120 150 # B_T and B_perp
+echo "Displaying last two lines of intf.in, check for the correct names"
+echo "######################################"
+cat intf.in | tail -2
+echo "######################################"
+echo "Total number of interferograms is $(cat intf.in | wc -l)"
+
+cp ../batch_tops.config .
+
+sed -i '/proc_stage/ c\proc_stage = 1' batch_tops.config
+sed -i '/master_image/ c\master_image = S1_'$MM'_ALL_'$IW'' batch_tops.config
+
+cat batch_tops.config | grep master_image
+
+# Generating topographic phase
+head -1 intf.in > one.in
+# Removing first line from intf.in (to avoid regenerating the interferogram)
+sed -i -e "1d" intf.in
+
+intf_tops.csh one.in batch_tops.config
+
+# Generating all the interferograms
+
+sed -i '/proc_stage/ c\proc_stage = 2' batch_tops.config
+
+intf_tops_parallel.csh intf.in batch_tops.config $NUM_THREADS
+
+rm intf_*log intf_*in 

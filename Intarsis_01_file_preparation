@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# FILES IN TOP FOLDER: SAFE_filelist pins.ll 
+# MAKE SURE THAT YOUR $HOME/.cshrc contains the following aliases:
+# alias wgetasf 'wget --http-user=username --http-password=pass'
+
+mkdir data orbit reframed topo merge
+
+#Choose DEM
+#cp dem_mdt05.grd topo/dem.grd  # For custom_dem
+#cp dem_gmtsarweb.grd topo/dem.grd # For GMT page dem
+#cp dem_gmtv1.grd topo/dem.grd # For GMT page dem
+cp dem.grd topo/dem.grd
+
+cp pins.ll data/
+cp SAFE_filelist data
+
+cd data
+organize_files_tops_linux.csh SAFE_filelist pins.ll 1
+organize_files_tops_linux.csh SAFE_filelist pins.ll 2
+
+

@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Start the IW allignement
+# You must input as arguments the IW as F1, F2 or F3 and the master date as YYYYMMDD
+# Also, a master_image file containing the date of MM is possible to use.
+
+if [ -z $1 ]; then
+	echo "Must specify IW and MM date as parameters"
+	echo "Example: 02_allign F1 YYYYMMDD"
+	exit
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	IWN=$(echo $IW | cut -c 2
+	echo "Selected $IW"
+	echo "Removing interferograms from $IW"
+else
+	echo "You must specify the IW as F1,F2 or F3"
+	exit
+fi
+
+if [ -z $2 ]; then
+	echo "Must specify IW and MM date as parameters"
+	echo "Example: 02_allign F1 YYYYMMDD"
+	exit
+elif [ -e master_image ]; then
+	MM=$(cat master_image)
+	echo "master image file detected: $MM"
+elif [[ $(echo "$2 > 20140000" | bc -l) == 1 ]] && [[ $(echo "$2 < 20250000" | bc -l) == 1 ]]; then
+	echo "Master Master set to $2"
+	MM=$2
+else
+	echo "Error in Master Master date"
+	exit
+fi
+
+# Creating Directories
+rm -r $IW &> /dev/null # Cleaning from previous processings
+mkdir $IW $IW/raw $IW/topo
+ln -s $(pwd)/topo/dem.grd $IW/topo/
+
+cd $IW/raw
+ln -s ../../data/F*/*.SAFE/*/*iw$IWN*vv*xml .
+ln -s ../../data/F*/*.SAFE/*/*iw$IWN*vv*tiff .
+ln -s ../../data/*EOF .
+ln -s ../topo/dem.grd .
+
+prep_data_linux.csh
+preproc_batch_tops_esd.csh data.in dem.grd 1
+
+cp baseline_table.dat ../
+
+# Modify data.in to put the MM on the top
+grep '\-vv\-'$MM'' data.in > data.in_temp
+grep -v '\-vv\-'$MM'' data.in >> data.in_temp
+mv data.in data.in.old
+mv data.in_temp data.in
+
+# RUN SECOND STEP OF PREPROC_BATCH
+preproc_batch_tops_esd.csh data.in dem.grd 2
