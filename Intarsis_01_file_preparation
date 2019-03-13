@@ -4,7 +4,7 @@
 # MAKE SURE THAT YOUR $HOME/.cshrc contains the following aliases:
 # alias wgetasf 'wget --http-user=username --http-password=pass'
 
-mkdir data orbit reframed topo merge
+mkdir data orbit reframed topo
 DEM=$(grep dem_filename intarsis.config | awk '{print $2}')
 
 #check for DEM in folder
@@ -14,15 +14,15 @@ if [ ! -f $DEM ]; then
 fi
 
 #Check for pins.ll file
-if [ ! -z pins.ll ]; then
+if [ ! -f pins.ll ]; then
 	echo "pins.ll file is missing. Create in the program's folder and try again"
 	exit
 fi
-if [ ! -z SAFE_filelist ]; then
+if [ ! -f SAFE_filelist ]; then
 	echo "SAFE_filelist file is missing. Create a SAFE_filelist containing full path to all SLC folers and try again"
 	exit
 fi
-exit
+
 echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > intarsis.log
 
 
