@@ -5,13 +5,65 @@
 # A script called unwrap_intf.csh is needed in order to run this program.
 
 # TODO: include generation of unwrap_intf.csh, allow enable or disable interpolation
-# TODO: include coherence thresholds.
-# TODO: Include thread number as a global parameter
+# TODO: Allow unwrap for merged products.
 
-NUM_THREADS=20
+# Getting parameters from intarsis.config
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+COHERENCE=$(grep unwrap_coherence intarsis.config | awk '{print $2}')
+INTERPOLATION=$(grep unwrap_interpolation intarsis.config | awk '{print $2}')
+PARALLEL=$(grep use_parallel intarsis.config | awk '{print $2}')
+NUM_THREADS=$(grep num_cores intarsis.config | awk '{print $2}')
 
 
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	IWN=$(echo $IW | cut -c 2)
+elif [ -z $1 ]; then
+	echo "Must specify IW as parameters or configure it in intarsis.config"
+	echo "Example: Intarsis_05_unwrap F1"
+	exit
+else
+	echo "You must specify the IW as F1,F2 or F3"
+	exit
+fi
 
+# Report of the selected parameters
+echo "###################################################################"
+echo "Intarsis Unwrap parameters:"
+if [ $IW_config ]; then
+	echo "Swath to process: $IW (imported from intarsis.config)"
+else
+	echo "Swath to process: $IW (command line)"
+fi
+# Check if B_P and B_T are configured as valid numbers
+if [ $(echo "$COHERENCE > 0" | bc -l) ] && [ $(echo "$COHERENCE < 1" | bc -l) ] 2>/dev/null; then
+	echo "Coherence threshold for unwrap: $COHERENCE (imported from intarsis.config)"
+else
+	COHERENCE=0.15	
+	echo "Coherence threshold for unwrap: $COHERENCE (default value)"
+fi
+if [ $INTERPOLATION ]; then
+	echo "Selected interpolation for low coherence pixels"
+else
+	echo "No interpolation in unwrapping"
+fi
+
+if [ $PARALLEL ]; then
+	echo "Paralellization is on"
+	if [ -n "$NUM_THREADS" ] && [ "$NUM_THREADS" -eq "$NUM_THREADS" ] 2>/dev/null; then
+		echo "Number of CPU threads: $NUM_THREADS (imported from intarsis.config)"
+	else
+		NUM_THREADS=6
+		echo "Number of CPU threads: $NUM_THREADS (default value)"
+	fi
+else
+	echo "Paralelization is off"
+fi
+
+# Test for unwrap_intf.csh for parallelization
 which unwrap_intf.csh &> /dev/null
 if [ "$?" -eq 0 ]; then
 	echo "unwrap_intf.csh is found"
@@ -19,21 +71,9 @@ else
 	echo "unwrap_intf.csh not found, exiting"
 	exit
 fi
+echo "###################################################################"
 
-if [ -z $1 ]; then
-        echo "Must specify IW as parameter"
-        echo "Example: Intarsis_05_unwrap F1"
-        exit
-elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
-        IW=$1
-	echo "Selected $IW"
-        echo "Unwrapping interferograms from $IW"
-else
-    	echo "You must specify the IW as F1,F2 or F3"
-        exit
-fi
-
-echo "$(date "+%d/%m/%y %H:%M") - Run unwrap $IW" >> Intarsis_stage
+echo "$(date "+%d/%m/%y %H:%M") - Run unwrap $IW" >> intarsis.log
 
 cd $IW/intf_all
 rm intflist

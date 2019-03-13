@@ -1,20 +1,52 @@
 #!/bin/bash
 
-# This script run SBAS module for an specific IW.
+# This script run SBAS module.
+# TODO: Allow this step for a merged product.
 
-if [ -z $1 ]; then
-	echo "Must specify IW and coherence threshold as parameter"
-	echo "Example: Intarsis_04_mask F2"
-	exit
+
+# Getting parameters from intarsis.config
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+ATM=$(grep atm_iter intarsis.config | awk '{print $2}')
+SMOOTH=$(grep smooth_level intarsis.config | awk '{print $2}')
+
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
 elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
-	echo "Selected $IW"
+	IWN=$(echo $IW | cut -c 2)
+elif [ -z $1 ]; then
+	echo "Must specify IW as parameters or configure it in intarsis.config"
+	echo "Example: Intarsis_06_sbas F1"
+	exit
 else
 	echo "You must specify the IW as F1,F2 or F3"
 	exit
 fi
 
-echo "$(date "+%d/%m/%y %H:%M") - Run SBAS $IW" >> Intarsis_stage
+# Report of the selected parameters
+echo "###################################################################"
+echo "Intarsis SBAS parameters:"
+if [ $IW_config ]; then
+	echo "Swath to process: $IW (imported from intarsis.config)"
+else
+	echo "Swath to process: $IW (command line)"
+fi
+if [ -n "$ATM" ] && [ "$ATM" -eq "$ATM" ] 2>/dev/null; then
+	echo "Atmospheric iterations: $ATM (imported from intarsis.config)"
+else
+	ATM=0	
+	echo "Disabled Atmospheric estimation (default value)"
+fi
+if [ -n "$SMOOTH" ] && [ "$SMOOTH" -eq "$SMOOTH" ] 2>/dev/null; then
+	echo "Atmospheric iterations: $ATM (imported from intarsis.config)"
+else
+	SMOOTH=2	
+	echo "SMOOTH level configured to 2 (default value)"
+fi
+echo "###################################################################"
+
+echo "$(date "+%d/%m/%y %H:%M") - Run SBAS $IW" >> intarsis.log
 
 rm -r SBAS &> /dev/null
 mkdir SBAS &> /dev/null
@@ -45,10 +77,8 @@ YDIM=$(gmt grdinfo $UNWRAP_GRD | grep y_max | awk '{print $11}')
 MM=$(cat ../$IW/raw/data.in | head -n 1 | cut -c 16-23)
 WAVELENGTH=$(cat ../$IW/raw/S1_"$MM"_ALL_$IW.PRM | grep radar_wavelength | awk '{print $3}')
 RNG_SAMP_RATE=$(cat ../$IW/raw/S1_"$MM"_ALL_$IW.PRM | grep rng_samp_rate | awk '{print $3}' | head -n 1)
-RANGE=888126 # TODO: extract from Supermaster.prm
-INC=40
-SMOOTH=2
-ATM=3
+RANGE=888126 	# TODO: extract and calculate from Supermaster.prm
+INC=40		# TODO: calculate incidence angle
 
 
 

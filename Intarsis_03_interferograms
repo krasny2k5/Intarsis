@@ -4,45 +4,85 @@
 # You must input as arguments the IW as F1, F2 or F3 and the master date as YYYYMMDD
 # Also, a master_image file containing the date of MM is possible to use.
 
-# TODO: introduce Bperp and B_T parameters in interferogram generation.
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+MM=$(grep master_slc intarsis.config | awk '{print $2}')
+B_P=$(grep b_perp intarsis.config | awk '{print $2}')
+B_T=$(grep b_temp intarsis.config | awk '{print $2}')
+PARALLEL=$(grep use_parallel intarsis.config | awk '{print $2}')
+NUM_THREADS=$(grep num_cores intarsis.config | awk '{print $2}')
 
-NUM_THREADS=28 # NUMBER OF THREADS FOR INTERFEROGRAM GENETATION
-
-
-if [ -z $1 ]; then
-	echo "Must specify IW and MM date as parameters"
-	echo "Example: 02_allign F1 YYYYMMDD"
-	exit
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
 elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
 	IWN=$(echo $IW | cut -c 2)
-	echo "Selected $IW"
-	echo "Removing interferograms from $IW"
+elif [ -z $1 ]; then
+	echo "Must specify IW and MM date as parameters or configure it in intarsis.config"
+	echo "Example: 02_allign F1 YYYYMMDD"
+	exit
 else
 	echo "You must specify the IW as F1,F2 or F3"
 	exit
 fi
 
-
-if [ -e master_image ]; then
-	MM=$(cat master_image)
-	echo "master image file detected: $MM"
+if [[ $(echo "$MM > 20140000" | bc -l) == 1 ]] && [[ $(echo "$MM < 20250000" | bc -l) == 1 ]]; then
+	MM_config=true
 elif [ -z $2 ]; then
-	echo "Must specify IW and MM date as parameters"
+	echo "Must specify IW and MM date as parameters or configure it in intarsis.config"
 	echo "Example: 02_allign F1 YYYYMMDD"
 	exit
 elif [[ $(echo "$2 > 20140000" | bc -l) == 1 ]] && [[ $(echo "$2 < 20250000" | bc -l) == 1 ]]; then
-	echo "Master Master set to $2"
 	MM=$2
 else
 	echo "Error in Master Master date"
 	exit
 fi
 
-echo "$(date "+%d/%m/%y %H:%M") - Run Inteferogram generation for $IW" >> Intarsis_stage
+echo "###################################################################"
+echo "Intarsis interferogram settings:"
+if [ $MM_config ]; then
+	echo "Master master date: $MM (imported from intarsis.config)"
+else
+	echo "Master master date: $MM (command line)"
+fi
+if [ $IW_config ]; then
+	echo "Swath to process: $IW (imported from intarsis.config)"
+else
+	echo "Swath to process: $IW (command line)"
+fi
+
+# Check if B_P and B_T are configured as valid numbers
+if [ -n "$B_P" ] && [ "$B_P" -eq "$B_P" ] 2>/dev/null; then
+	echo "Perpendicular baseline: $B_P (imported from intarsis.config)"
+else
+	B_P=200	
+	echo "Perpendicular baseline: $B_P (default value)"
+fi
+if [ -n "$B_T" ] && [ "$B_T" -eq "$B_T" ] 2>/dev/null; then
+	echo "Temporal baseline: $B_T (imported from intarsis.config)"
+else
+	B_T=150
+	echo "Temporal baseline: $B_T (default value)"
+fi
+
+if [ $PARALLEL ]; then
+	echo "Paralellization is on"
+	if [ -n "$NUM_THREADS" ] && [ "$NUM_THREADS" -eq "$NUM_THREADS" ] 2>/dev/null; then
+		echo "Number of CPU threads: $NUM_THREADS (imported from intarsis.config)"
+	else
+		NUM_THREADS=6
+		echo "Number of CPU threads: $NUM_THREADS (default value)"
+	fi
+else
+	echo "Paralelization is off"
+fi
+echo "###################################################################"
+
+echo "$(date "+%d/%m/%y %H:%M") - Run Inteferogram generation for $IW" >> intarsis.log
 
 cd $IW
-select_pairs.csh baseline_table.dat 120 150 # B_T and B_perp
+select_pairs.csh baseline_table.dat $B_T $B_P # B_T and B_perp
 echo "Displaying last two lines of intf.in, check for the correct names"
 echo "######################################"
 cat intf.in | tail -2

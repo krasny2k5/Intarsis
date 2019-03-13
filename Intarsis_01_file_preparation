@@ -5,26 +5,28 @@
 # alias wgetasf 'wget --http-user=username --http-password=pass'
 
 mkdir data orbit reframed topo merge
+DEM=$(grep dem_filename intarsis.config | awk '{print $2}')
 
 #check for DEM in folder
-if [ -z dem.grd ]; then
-	echo "DEM is missing, please rename it to dem.grd and try again"
+if [ ! -f $DEM ]; then
+	echo "DEM is missing, please set up intarsis.config and try again"
 	exit
 fi
+
 #Check for pins.ll file
-if [ -z pins.ll ]; then
+if [ ! -z pins.ll ]; then
 	echo "pins.ll file is missing. Create in the program's folder and try again"
 	exit
 fi
-if [ -z SAFE_filelist ]; then
+if [ ! -z SAFE_filelist ]; then
 	echo "SAFE_filelist file is missing. Create a SAFE_filelist containing full path to all SLC folers and try again"
 	exit
 fi
+exit
+echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > intarsis.log
 
-echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > Intarsis_stage
 
-
-cp dem.grd topo/dem.grd
+cp $DEM topo/dem.grd
 
 cp pins.ll data/
 cp SAFE_filelist data
