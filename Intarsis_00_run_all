@@ -1,0 +1,38 @@
+#!/bin/bash
+# This program runs all steps of Intarsis workflow from file preparation to the SBAS procedure.
+# It logs all the messaging into intarsis.runall.log file.
+# It requires  file intarsis.config properly configured.
+
+if [ ! -f intarsis.config ]; then
+	echo "Configuration file intarsis.config not found"
+	echo "Please read the documentation and create it."
+	exit
+fi
+
+f [ ! -f SAFE_filelist ]; then 
+        echo "SLC list file SAFE_fileslist not found"
+        echo "Please read the documentation and	create it."
+	exit
+fi
+
+f [ ! -f pins.ll ]; then 
+        echo "Configuration file pins.ll not found"
+        echo "Please read the documentation and	create it."
+	exit
+fi
+
+f [ ! -f batch_tops.config ]; then 
+        echo "Configuration file batch_tops.config not found"
+        echo "Please read the documentation and	create it."
+	exit
+fi
+
+##################
+# Run the steps: #
+##################
+Intarsis_01_file_preparation &> intarsis.runall.log
+Intarsis_02_allign &>> intarsis.runall.log
+Intarsis_03_interferograms &>> intarsis.runall.log
+Intarsis_04b_mask &>> intarsis.runall.log
+Intarsis_05_unwrap &>> intarsis.runall.log
+Intarsis_06_sbas &>> intarsis.runall.log
