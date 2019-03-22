@@ -82,6 +82,10 @@ echo "###################################################################"
 echo "$(date "+%d/%m/%y %H:%M") - Run Inteferogram generation for $IW" >> intarsis.log
 
 cd $IW
+
+# deleting previous interferograms
+rm -rf intf_all
+
 select_pairs.csh baseline_table.dat $B_T $B_P # B_T and B_perp
 echo "Displaying last two lines of intf.in, check for the correct names"
 echo "######################################"
@@ -90,22 +94,26 @@ echo "######################################"
 echo "Total number of interferograms is $(cat intf.in | wc -l)"
 
 cp ../batch_tops.config .
-
-sed -i '/proc_stage/ c\proc_stage = 1' batch_tops.config
 sed -i '/master_image/ c\master_image = S1_'$MM'_ALL_'$IW'' batch_tops.config
-
 cat batch_tops.config | grep master_image
 
-# Generating topographic phase
-head -1 intf.in > one.in
-# Removing first line from intf.in (to avoid regenerating the interferogram)
-sed -i -e "1d" intf.in
-
-intf_tops.csh one.in batch_tops.config
+# Check if topo_ra.grd is already present in $IW directory:
+if [ ! -f topo/topo_ra.grd ]; then	
+	echo "No topo_ra.grd present in topo directory, generating topographic phase"
+	sed -i '/proc_stage/ c\proc_stage = 1' batch_tops.config
+	# Generating topographic phase
+	head -1 intf.in > one.in
+	# Removing first line from intf.in (to avoid regenerating the interferogram)
+	sed -i -e "1d" intf.in
+	intf_tops.csh one.in batch_tops.config
+else
+	echo "Detected topo_ra.grd from previous processing"
+	echo "Skipping geneation of topographic phase"
+fi
 
 # Generating all the interferograms
 
-sed -i '/proc_stage/ c\proc_stage = 2' batch_tops.config
+	sed -i '/proc_stage/ c\proc_stage = 2' batch_tops.config
 
 intf_tops_parallel.csh intf.in batch_tops.config $NUM_THREADS
 
