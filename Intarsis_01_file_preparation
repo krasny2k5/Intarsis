@@ -3,8 +3,9 @@
 # FILES IN TOP FOLDER: SAFE_filelist pins.ll 
 # MAKE SURE THAT YOUR $HOME/.cshrc contains the following aliases:
 # alias wgetasf 'wget --http-user=username --http-password=pass'
+# TODO: check if wgetasf is present and exit if it is not found
 
-mkdir data orbit reframed topo
+mkdir data topo
 DEM=$(grep dem_filename intarsis.config | awk '{print $2}')
 
 #check for DEM in folder
@@ -29,7 +30,7 @@ echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > intarsis.log
 cp $DEM topo/dem.grd
 
 cp pins.ll data/
-cp SAFE_filelist data
+cp SAFE_filelist data/
 
 cd data
 organize_files_tops_linux.csh SAFE_filelist pins.ll 1

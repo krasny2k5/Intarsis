@@ -8,9 +8,16 @@
 # check mask_def.grd from the selected IW (ex: ncview FX/mask_def.grd)       #
 ##############################################################################
 
+if [ -f "intarsis.config" ]; then
 IW=$(grep swath_number intarsis.config | awk '{print $2}')
 COHER=$(grep mask_level intarsis.config | awk '{print $2}')
+MASKING=$(grep use_mask intarsis.config | awk '{print $2}')
+fi
 
+if [ $MASKING = false ]; then
+	echo "Coherence mask is disabled in intarsis.config"
+	exit
+fi
 
 if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
 	IWN=$(echo $IW | cut -c 2)
@@ -18,36 +25,38 @@ if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
 elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
 	IWN=$(echo $IW | cut -c 2)
+	IW_config=false
 elif [ -z $1 ]; then
 	echo "Must specify IW as parameters or configure it in intarsis.config"
-	echo "Example: Intarsis_04b_mask F1 0.12"
+	echo "Example: Intarsis_04b_mask F[1,2,3] 0.12"
 	exit
 else
-	echo "You must specify the IW as F1,F2 or F3 and the coherence threshold for the mask"
+	echo "You must specify the IW as F1, F2 or F3 and the coherence threshold for the mask"
 	exit
 fi
 
 # Test coherence threshold
-if [ $(echo "$COHER > 0" | bc -l) == 1 ]] && [[ $(echo "$COHER < 1" | bc -l) == 1 ];then
+if [[ $(echo "$COHER > 0" | bc -l) == 1 ]] && [[ $(echo "$COHER < 1" | bc -l) == 1 ]];then
 	COHER_config=true
 elif [[ $(echo "$2 > 0" | bc -l) == 1 ]] && [[ $(echo "$2 < 1" | bc -l) == 1 ]];then
 	COHER=$2
+	COHER_config=false
 else
 	echo "You must specify a coherence threshold between 0.001 and 0.999"
 	exit
 fi
 
-echo "$(date "+%d/%m/%y %H:%M") - Run Mask generation $IW" >> intasis.log
+echo "$(date "+%d/%m/%y %H:%M") - Run Mask generation $IW" >> intarsis.log
 
 echo "###################################################################"
 echo "Intarsis masking parameters:"
-if [ $IW_config ]; then
+if $IW_config; then
 	echo "Swath to process: $IW (imported from intarsis.config)"
 else
 	echo "Swath to process: $IW (command line)"
 fi
 
-if [ $COHER_config ]; then
+if $COHER_config; then
 	echo "Coherence threshold: $COHER (imported from intarsis.config)"
 else
 	echo "Coherence threshold: $COHER (from command line)"
