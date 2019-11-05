@@ -7,7 +7,6 @@ Run inside a folder with the following required input files:
 - SAFE_filelist: File with full path to the SLC files to use. The zips must be uncompressed in \*SAFE folders. The SLC can be outside of processing folder.
 - pins.ll: File with the coordinates of the region of intererest.
 - batch_tops.config: file with interferogram parameters. You can modify it with the appropiate parameters for your site.
-- (optional) master_image: a file containing the date of the master image with format YYYYMMDD.
 - Intarsis.config: configuration file with some parameters for the automatization of the processing.
 
 # Description of the routines:
