@@ -2,29 +2,40 @@
 
 # This program reset the intf step for a specified IW.
 
-if [ -z $1 ]; then
+if [ -f "intarsis.config" ]; then
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+IW_config=true
+fi
+
+if [ -z $1 ] && [ -z $IW ]; then
 	echo "Must specify IW as parameter"
 	echo "Example: Intarsis_09_reset_intf F1"
 	exit
-elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+
+fi
+
+if ! $IW_config; then
 	IW=$1
+fi
+
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
 	echo "Selected $IW"
 	echo "Removing interferograms from $IW"
+	rm -rf $IW/intf* &> /dev/null
+	rm $IW/text* &> /dev/null
+	rm $IW/baseline.ps $IW/batch_tops.config $IW/gmt.history &> /dev/null
+	rm $IW/one.in &> /dev/null
+	echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> intarsis.log
 else
-	echo "You must specify the IW as F1,F2 or F3"
+	echo "You must specify the IW as F[1,2,3]"
+	echo "Or specify it via intarsis.config"
 	exit
 fi
 
 RESET_TOPO=false
 
-echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> intarsis.log
-
-rm -rf $IW/intf*
-rm $IW/text*
-rm $IW/baseline.ps $IW/batch_tops.config $IW/gmt.history
-rm $IW/one.in
 #topo folder
-if [ $RESET_TOPO ]; then
+if $RESET_TOPO; then
 rm $IW/topo/topo_ra.pdf $IW/topo/topo_ra.grd $IW/topo/trans.dat $IW/topo/gmt.history $IW/topo/master.PRM $IW/topo/*.LED
 else
 echo "Keeping topo phase"
