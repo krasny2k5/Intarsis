@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Intarsis reset topophase to regenerate in the next Intarsis_03 step.
+# This is useful if you make changes in the region_cut section of batch_tops.config file for example.
+
+if [ -f "intarsis.config" ]; then
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+IW_config=true
+fi
+
+if [ -z $1 ] && [ -z $IW ]; then
+	echo "IW must be selected via intarsis.config or as an argument"
+	echo "Example: Intarsis_09_reset_topo F1"
+	exit
+fi
+
+if ! $IW_config; then
+	IW=$1
+fi
+
+if [ $IW == "F1" ] || [ $IW == "F2" ] || [ $IW == "F3" ]; then
+	echo "Removing topophase from $IW"
+	rm $IW/topo/topo_ra.*
+	exit
+else
+	echo "Invalid swath number, use F[1,2,3] as input"
+fi
+
+

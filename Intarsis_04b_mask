@@ -81,3 +81,5 @@ rm mask_def.grd &> /dev/null
 ln -s ../../mask_def.grd .
 cd ..
 done
+
+echo "$(date "+%d/%m/%y %H:%M") - Finished Mask generation $IW" >> intarsis.log

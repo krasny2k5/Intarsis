@@ -94,3 +94,6 @@ echo "Smooth: " $SMOOTH
 
 echo "running SBAS code"
 sbas intf.tab scene.tab $N_INTF $N_SLC $XDIM $YDIM -atm $ATM -range $RANGE -incidence $INC -wavelength $WAVELENGTH -smooth $SMOOTH -rms -dem
+
+
+echo "$(date "+%d/%m/%y %H:%M") - Finished SBAS $IW" >> intarsis.log

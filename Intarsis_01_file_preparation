@@ -36,4 +36,5 @@ cd data
 organize_files_tops_linux.csh SAFE_filelist pins.ll 1
 organize_files_tops_linux.csh SAFE_filelist pins.ll 2
 
+echo "$(date "+%d/%m/%y %H:%M") - Finished directory preparation" > intarsis.log
 

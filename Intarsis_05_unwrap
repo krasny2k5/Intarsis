@@ -83,3 +83,5 @@ ls -d 2*/ > intflist
 sed -i 's/\///g' intflist
 
 unwrap_parallel.csh intflist $NUM_THREADS
+
+echo "$(date "+%d/%m/%y %H:%M") - Finished unwrap $IW" >> intarsis.log

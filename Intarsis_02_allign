@@ -113,3 +113,5 @@ baseline_table.csh $MM_PRM $i >> baseline_table.dat
 done
 
 cp baseline_table.dat ..
+
+echo "$(date "+%d/%m/%y %H:%M") - Finished Allign $IW" >> intarsis.log

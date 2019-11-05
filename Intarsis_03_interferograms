@@ -122,3 +122,5 @@ fi
 intf_tops_parallel.csh intf.in batch_tops.config $NUM_THREADS
 
 rm intf_*log intf_*in 
+
+echo "$(date "+%d/%m/%y %H:%M") - Finished Inteferogram generation for $IW" >> intarsis.log

@@ -17,7 +17,7 @@ fi
 
 RESET_TOPO=false
 
-echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> Intarsis_stage
+echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> intarsis.log
 
 rm -rf $IW/intf*
 rm $IW/text*
