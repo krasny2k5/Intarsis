@@ -10,6 +10,8 @@ Run inside a folder with the following required input files:
 - Intarsis.config: configuration file with some parameters for the automatization of the processing.
 
 # Description of the routines:
+## Intarsis_00_run_all
+Routine to run all steps from 01 to 06. It will log everything in intarsis.runall.log. The parameters must be configured via intarsis.config.
 ## Intarsis_01_file_preparation
 This program check all the input files, creates the folder structure and cut the SLC acording to the pins.ll file.
 ## Intarsis_02_allign
