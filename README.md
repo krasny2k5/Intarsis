@@ -22,8 +22,10 @@ This program check all the input files, creates the folder structure and cut the
 This program does the corregistration for each Interferometric Swath. You must input the desired swath (F1,F2 or F3) as parameter and the master master date (or create a master_image file).
 ## Intarsis_03_intf
 This program generates the interferograms, using "parallel" (check that is installed in your system).
-## Intarsis_04_mask
-Creation of a coherence mask to speedup unwrap step.
+## Intarsis_04a_merge
+(Optional step) Merge two or three swaths together before the unwrap
+## Intarsis_04b_mask
+(Optional step) Creation of a coherence mask to speedup unwrap step.
 ## Intarsis_05_unwrap
 Unwrapping of the phase.
 ## Intarsis_06_sbas
