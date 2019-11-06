@@ -7,7 +7,11 @@ Run inside a folder with the following required input files:
 - SAFE_filelist: File with full path to the SLC files to use. The zips must be uncompressed in \*SAFE folders. The SLC can be outside of processing folder.
 - pins.ll: File with the coordinates of the region of intererest.
 - batch_tops.config: file with interferogram parameters. You can modify it with the appropiate parameters for your site.
-- Intarsis.config: configuration file with some parameters for the automatization of the processing.
+
+Optional files
+- Intarsis.config: (recommended) configuration file with some parameters for the automatization of the processing.
+- orbits.list: list of orbit files. If it is not provided the gmtsar will download from ASF. But if the machine does not have Internet access or ASF server is down it can be provided and Intarsis will use.
+
 
 # Description of the routines:
 ## Intarsis_00_run_all
@@ -26,3 +30,11 @@ Unwrapping of the phase.
 Generates intf.tab and scene.tab files for SBAS and runs the code
 ## Intarsis_09_reset_*
 Some routines to remove some steps if you want to redo it.
+
+
+# Other tools
+## Sentinel1_orbit_downloader (https://github.com/krasny2k5/sentinel1_orbit_downloader)
+This program will download the orbit archive from ESA Sentinel-1 QC server and store in the same folder as the program. It is recommended to speed up the processing since it is faster than download the fil from asf server, however the orbit archive is quite big (about 15Gb as Dec 2019).
+
+## update_gmt5sar
+Small script to download, compile and install GMTSAR. It is recommended for updates, not for initial installation because the first compilation can have unmet depedencies problems.
