@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Small script to download, compile and install trunk version of GMTSAR.
+# First time installation is better to do it manually to address possible
+# missing dependencies.
+# Joaquin Escayo @ jescayo@ucm.es
+
+# Configure the following variables to match your system preferences
+S1_ORBIT_DIR=/home/subsidence/sar-db2/sentinel_precise_orbits
+GMT_ORBIT_DIR=/opt/gmt5sar/orbits
+INSTALL_DIR=/opt/gmt5sar/
+
+# update SVN with TRUNK version:
+
+#conda deactivate
+mkdir $HOME/software
+cd $HOME/software
+rm -rf gmtsar
+git clone https://github.com/gmtsar/gmtsar.git
+cd gmtsar
+sed -i '/set orb_dir/ c\  set orb_dir = "'$S1_ORBIT_DIR'"' gmtsar/csh/organize_files_tops_linux.csh
+sed -i '/set orb_dir/ c\set orb_dir = "'$S1_ORBIT_DIR'"' gmtsar/csh/prep_data_linux.csh
+make clean
+read -p "Enter to compile"
+autoconf
+./configure --with-orbits-dir=$GMT_ORBIT_DIR --prefix=$INSTALL_DIR
+make
+read -p "Press any key to install"
+make install
+
+echo "DONE"
