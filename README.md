@@ -40,3 +40,6 @@ This program will download the orbit archive from ESA Sentinel-1 QC server and s
 
 ## update_gmt5sar
 Small script to download, compile and install GMTSAR. It is recommended for updates, not for initial installation because the first compilation can have unmet depedencies problems.
+
+## ortho2ellip
+Program that adds the EGM08 heights to a orthonormal DEM and convert into GMTSAR netcdf format and projection. It needs the EGM08 altitudes file.
