@@ -1,8 +1,9 @@
 # Intarsis GMTSAR Automatic Processing workflow
 
-These programs generate an automatic processing flow to monitor zones by applying GMTSAR SBAS routine.
+These programs generate an automatic processing flow to monitor zones by applying GMTSAR SBAS routine. It is intended to work in Linux systems with a working GMTSAR and GMT installation. It is recommended to have also a recent version of gdal, if you have a old system use Anaconda to install updated versions.
 
-Run inside a folder with the following required input files:
+Itarsis must be copied in a folder declared in the $PATH varible. It is written in bash. You can run the different steps inside a folder with the following required input files:
+
 - dem.grd: Dem for the region of interest. You can download it from https://topex.ucsd.edu/gmtsar/demgen/ . Altitudes must be in WGS84 heights (ellipsoidal heights). GMTSAR can use higher resolution DEMs but it must be in EPSG:4326 and netCDF format.
 - SAFE_filelist: File with full path to the SLC files to use. The zips must be uncompressed in \*SAFE folders. The SLC can be outside of processing folder.
 - pins.ll: File with the coordinates of the region of intererest.
