@@ -2,9 +2,9 @@
 
 These programs generate an automatic processing flow to monitor zones by applying GMTSAR SBAS routine. It is intended to work in Linux systems with a working GMTSAR and GMT installation. It is recommended to have also a recent version of gdal, if you have a old system use Anaconda to install updated versions.
 
-Itarsis must be copied in a folder declared in the $PATH varible. It is written in bash. You can run the different steps inside a folder with the following required input files:
+Intarsis must be copied in a folder declared in the $PATH varible. It is written in bash. You can run the different steps inside a folder with the following required input files:
 
-- dem.grd: Dem for the region of interest. You can download it from https://topex.ucsd.edu/gmtsar/demgen/ . Altitudes must be in WGS84 heights (ellipsoidal heights). GMTSAR can use higher resolution DEMs but it must be in EPSG:4326 and netCDF format.
+- dem.grd: Dem for the region of interest. You can download it from https://topex.ucsd.edu/gmtsar/demgen/ . Altitudes must be in WGS84 heights (ellipsoidal heights). GMTSAR can use higher resolution DEMs but it must be in EPSG:4326 and netCDF format and nodata value set to NaN.
 - SAFE_filelist: File with full path to the SLC files to use. The zips must be uncompressed in \*SAFE folders. The SLC can be outside of processing folder.
 - pins.ll: File with the coordinates of the region of intererest.
 - batch_tops.config: file with interferogram parameters. You can modify it with the appropiate parameters for your site.
