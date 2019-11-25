@@ -24,7 +24,7 @@ This program does the corregistration for each Interferometric Swath. You must i
 ## Intarsis_03_intf
 This program generates the interferograms, using "parallel" (check that is installed in your system).
 ## Intarsis_04a_merge
-(Optional step) Merge two or three swaths together before the unwrap
+(Optional step) Merge two or three swaths together before the unwrap. Currently under develop.
 ## Intarsis_04b_mask
 (Optional step) Creation of a coherence mask to speedup unwrap step.
 ## Intarsis_05_unwrap
