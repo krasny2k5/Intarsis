@@ -17,6 +17,8 @@ fi
 
 echo "$(date "+%d/%m/%y %H:%M") - Reset unwrap $IW" >> Intarsis_stage
 
+rm .intarsis_step06 &> /dev/null
+
 cd $IW/intf_all
 for i in $(ls -d 2*/); do
 

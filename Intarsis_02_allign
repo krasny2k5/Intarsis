@@ -5,6 +5,19 @@
 # Also, a master_image file containing the date of MM is possible to use.
 # TODO: check if MM is present in the SLC.
 
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step01" ]; then
+        echo "You must run Intarsis_02_allign first"
+        exit
+fi
+
 if [ -f "intarsis.config" ]; then
 echo "intarsis.config found, importing variables"
 IW=$(grep swath_number intarsis.config | awk '{print $2}')
@@ -71,15 +84,18 @@ echo "###################################################################"
 echo "$(date "+%d/%m/%y %H:%M") - Run Allign $IW" >> intarsis.log
 
 # Creating Directories
+# TODO: ask before remove existing IW folder
 rm -r $IW &> /dev/null # Cleaning from previous processings
 mkdir $IW $IW/raw $IW/topo
 ln -s $(pwd)/topo/dem.grd $IW/topo/
 
 cd $IW/raw
+
 ln -s ../../data/F*/*.SAFE/*/*iw$IWN*vv*xml .
 ln -s ../../data/F*/*.SAFE/*/*iw$IWN*vv*tiff .
 ln -s ../../data/*EOF .
 ln -s ../topo/dem.grd .
+ln -s ../../data/orbits.list .
 
 prep_data_linux.csh
 
@@ -114,4 +130,5 @@ done
 
 cp baseline_table.dat ..
 
-echo "$(date "+%d/%m/%y %H:%M") - Finished Allign $IW" >> intarsis.log
+touch .intarsis_step02 &> /dev/null	# Creates a file to identify step02 done
+echo "$(date "+%d/%m/%y %H:%M") - Finished Allign $IW" >> ../../intarsis.log

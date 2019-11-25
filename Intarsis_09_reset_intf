@@ -21,24 +21,18 @@ fi
 if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
 	echo "Selected $IW"
 	echo "Removing interferograms from $IW"
-	rm -rf $IW/intf* &> /dev/null
-	rm $IW/text* &> /dev/null
-	rm $IW/baseline.ps $IW/batch_tops.config $IW/gmt.history &> /dev/null
-	rm $IW/one.in &> /dev/null
+	cd $IW	
+	rm -rf intf* &> /dev/null
+	rm text* &> /dev/null
+	rm baseline.ps $IW/batch_tops.config $IW/gmt.history &> /dev/null
+	rm one.in &> /dev/null
+	rm corr_stack.grd std.grd mask_def.grd &> /dev/null 	# Delete also the mask files
+	rm .intarsis_step03 &> /dev/null
+	
 	echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> intarsis.log
 else
 	echo "You must specify the IW as F[1,2,3]"
 	echo "Or specify it via intarsis.config"
 	exit
 fi
-
-RESET_TOPO=false
-
-#topo folder
-if $RESET_TOPO; then
-rm $IW/topo/topo_ra.pdf $IW/topo/topo_ra.grd $IW/topo/trans.dat $IW/topo/gmt.history $IW/topo/master.PRM $IW/topo/*.LED
-else
-echo "Keeping topo phase"
-fi
-
 

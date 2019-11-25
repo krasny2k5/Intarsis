@@ -4,6 +4,20 @@
 # You must input as arguments the IW as F1, F2 or F3 and the master date as YYYYMMDD
 # Also, a master_image file containing the date of MM iif [ -f "intarsis.config" ]; thens possible to use.
 
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis root folder check
+if [ ! -f ".intarsis_step02" ]; then
+        echo "You must run Intarsis_02_allign first"
+        exit
+fi
+
+
 if [ -f "intarsis.config" ]; then
 IW=$(grep swath_number intarsis.config | awk '{print $2}')
 MM=$(grep master_slc intarsis.config | awk '{print $2}')
@@ -88,7 +102,7 @@ echo "$(date "+%d/%m/%y %H:%M") - Run Inteferogram generation for $IW" >> intars
 cd $IW
 
 # deleting previous interferograms
-rm -rf intf_all
+rm -rf intf_all &> /dev/null
 
 select_pairs.csh baseline_table.dat $B_T $B_P # B_T and B_perp
 echo "Displaying last two lines of intf.in, check for the correct names"
@@ -123,4 +137,7 @@ intf_tops_parallel.csh intf.in batch_tops.config $NUM_THREADS
 
 rm intf_*log intf_*in 
 
+cd ..
+
+touch .intarsis_step03 &> /dev/null	# Intarsis control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Inteferogram generation for $IW" >> intarsis.log

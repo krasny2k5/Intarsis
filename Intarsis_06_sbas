@@ -3,6 +3,20 @@
 # This script run SBAS module.
 # TODO: Allow this step for a merged product.
 
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step05" ]; then
+        echo "You must run Intarsis_05_unwrap first"
+        exit
+fi
+
+
 # Getting parameters from intarsis.config
 if [ -f "intarsis.config" ]; then
 IW=$(grep swath_number intarsis.config | awk '{print $2}')
@@ -37,13 +51,13 @@ fi
 if [ -n "$ATM" ] && [ "$ATM" -eq "$ATM" ] 2>/dev/null; then
 	echo "Atmospheric iterations: $ATM (imported from intarsis.config)"
 else
-	ATM=0	
+	ATM=0
 	echo "Disabled Atmospheric estimation (default value)"
 fi
 if [ -n "$SMOOTH" ] && [ "$SMOOTH" -eq "$SMOOTH" ] 2>/dev/null; then
 	echo "Smoothness level: $SMOOTH (imported from intarsis.config)"
 else
-	SMOOTH=2	
+	SMOOTH=2
 	echo "SMOOTH level configured to 2 (default value)"
 fi
 echo "###################################################################"
@@ -95,5 +109,5 @@ echo "Smooth: " $SMOOTH
 echo "running SBAS code"
 sbas intf.tab scene.tab $N_INTF $N_SLC $XDIM $YDIM -atm $ATM -range $RANGE -incidence $INC -wavelength $WAVELENGTH -smooth $SMOOTH -rms -dem
 
-
-echo "$(date "+%d/%m/%y %H:%M") - Finished SBAS $IW" >> intarsis.log
+touch .intarsis_step06 &> /dev/null	# Intarsis step control file
+echo "$(date "+%d/%m/%y %H:%M") - Finished SBAS $IW" >> ../intarsis.log

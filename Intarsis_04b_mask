@@ -8,6 +8,19 @@
 # check mask_def.grd from the selected IW (ex: ncview FX/mask_def.grd)       #
 ##############################################################################
 
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step03" ]; then
+        echo "You must run Intarsis_03_interferograms first"
+        exit
+fi
+
 if [ -f "intarsis.config" ]; then
 IW=$(grep swath_number intarsis.config | awk '{print $2}')
 COHER=$(grep mask_level intarsis.config | awk '{print $2}')
@@ -66,11 +79,12 @@ echo "###################################################################"
 cd $IW
 if [ ! -f corr_stack.grd ]; then
 	ls intf_all/201*/corr.grd > corr.grd_list
-	echo "Generating corr_stack.grd"	
+	echo "Generating corr_stack.grd"
 	stack.csh corr.grd_list 1 corr_stack.grd std.grd
 else
 	echo "Detected previous corr_stack.grd"
 	echo "If you want to remove previous corr_stack.grd remove the file from $IW folder"
+	echo "Generating new mask with $COHER using old corr_stack.grd"
 fi
 gmt grdmath corr_stack.grd $COHER GE 0 NAN = mask_def.grd
 
@@ -82,4 +96,5 @@ ln -s ../../mask_def.grd .
 cd ..
 done
 
+touch .intarsis_step04b &> /dev/null	# Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Mask generation $IW" >> intarsis.log

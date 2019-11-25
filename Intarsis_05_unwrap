@@ -7,6 +7,19 @@
 # TODO: include generation of unwrap_intf.csh, allow enable or disable interpolation
 # TODO: Allow unwrap for merged products.
 
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step03" ]; then
+        echo "You must run Intarsis_03_interferograms first"
+        exit
+fi
+
 # Getting parameters from intarsis.config
 if [ -f "intarsis.config" ]; then
 IW=$(grep swath_number intarsis.config | awk '{print $2}')
@@ -84,4 +97,9 @@ sed -i 's/\///g' intflist
 
 unwrap_parallel.csh intflist $NUM_THREADS
 
+rm log_*.txt # clean log files
+
+cd ../..
+
+touch .intarsis_step05 &> /dev/null # Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished unwrap $IW" >> intarsis.log

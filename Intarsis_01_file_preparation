@@ -8,6 +8,13 @@
 mkdir data topo
 DEM=$(grep dem_filename intarsis.config | awk '{print $2}')
 
+if grep -q wgetasf $HOME/.cshrc ; then
+	echo "Found wgetasf alias in your $HOME/.cshrc file, should be able to download ASF data" 
+else
+	echo "Not found wgetasf alias in your $HOME/.cshrc file, please read Intarsis documentation"
+	exit
+fi
+
 #check for DEM in folder
 if [ ! -f $DEM ]; then
 	echo "DEM is missing, please set up intarsis.config and try again"
@@ -26,11 +33,17 @@ fi
 
 echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > intarsis.log
 
+touch .intarsis_folder		# Creates a file to identify the folder as a intarsis root folder
+touch .intarsis_step01		# File of step 01 done
 
 cp $DEM topo/dem.grd
 
 cp pins.ll data/
 cp SAFE_filelist data/
+
+if [ -f orbits.list ]; then
+	ln -s orbits.list data/orbits.list
+fi
 
 cd data
 organize_files_tops_linux.csh SAFE_filelist pins.ll 1

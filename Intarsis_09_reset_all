@@ -1,3 +1,3 @@
 #!/bin/sh
 
-rm F1 F2 F3 data topo merge orbit reframed SBAS intarsis.log -r
+rm F1 F2 F3 data topo merge orbit reframed SBAS intarsis.log .intarsis_folder .intarsis_step* -r

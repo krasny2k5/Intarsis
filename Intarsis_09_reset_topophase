@@ -21,6 +21,7 @@ fi
 if [ $IW == "F1" ] || [ $IW == "F2" ] || [ $IW == "F3" ]; then
 	echo "Removing topophase from $IW"
 	rm $IW/topo/topo_ra.*
+	echo "$(date "+%d/%m/%y %H:%M") - Reset topophase $IW" >> intarsis.log
 	exit
 else
 	echo "Invalid swath number, use F[1,2,3] as input"
