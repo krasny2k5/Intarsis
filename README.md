@@ -13,7 +13,6 @@ Optional files
 - Intarsis.config: (recommended) configuration file with some parameters for the automatization of the processing.
 - orbits.list: list of orbit files. If it is not provided the gmtsar will download from ASF. But if the machine does not have Internet access or ASF server is down it can be provided and Intarsis will use.
 
-
 # Description of the routines:
 ## Intarsis_00_run_all
 Routine to run all steps from 01 to 06. It will log everything in intarsis.runall.log. The parameters must be configured via intarsis.config.
@@ -44,3 +43,8 @@ Small script to download, compile and install GMTSAR. It is recommended for upda
 
 ## ortho2ellip
 Program that adds the EGM08 heights to a orthonormal DEM and convert into GMTSAR netcdf format and projection. It needs the EGM08 altitudes file and the input DEM must be readable by gdal and with declared srs.
+
+
+Other recommendations:
+
+- Some distros do not compile GMT with BLAS/LAPACK support, so some steps can be slower. It is recommended to use when possible, so you might consider to recompile GMT to add these features.
