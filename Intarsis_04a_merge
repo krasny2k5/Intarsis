@@ -9,23 +9,55 @@
 # TODO: import tracks to merge from intarsis.config and/or from command line and store in SWATHS array
 # TODO: check that the processing is already done for each swath
 
-SWATHS=(F2 F1 F3)
+if [ -f "intarsis.config" ]; then
+MERGE=$(grep merge_swaths intarsis.config | awk '{print $2}')
+SWATHS=$(grep swaths_to_merge intarsis.config | awk '{print $2}')
+fi
+
+if ! $MERGE; then
+	echo "Merge swaths is disabled in intarsis.config, exitting"
+	exit
+fi
+
+if [[ ! -z $1 ]]; then
+	SWATHS=($(echo $1 | sed 's/,/\ /g')) # Converting into an array the SWATHS variable
+	SWATHS_config=false
+else 
+	SWATHS=($(echo $SWATHS | sed 's/,/\ /g')) # Converting into an array the SWATHS variable
+	SWATHS_config=true
+fi
 
 # Sorting the SWATHS array
 IFS=$'\n' MERGE_SWATHS=($(sort <<<"${SWATHS[*]}"))
 unset IFS
+
+if [[ ${SWATHS[*]} == "F1 F2 F3" ]] || [[ ${SWATHS[*]} == "F1 F2" ]] || [[ ${SWATHS[*]} == "F2 F3" ]]; then
+	VALID=true
+else
+	echo "Invalid Swaths detected or bad formating, only consecutive arrays are posible to merge"
+	exit
+fi
 
 if [ ${#MERGE_SWATHS[@]} -lt 2 ]; then
 	echo "There is not enough swaths to merge. Please check configuration"
 	exit
 fi 
 
+echo "###################################################################"
+echo "Intarsis swath merging parameters:"
 echo "Merging ${#MERGE_SWATHS[@]} swaths: ${MERGE_SWATHS[*]}"
+if $SWATHS_config; then
+echo "Imported from intarsis.config"
+else
+echo "Configured via command-line"
+fi
+echo "###################################################################"
+
+exit
 
 ##############################################
 #  Data check (folder,swaths, intf, etc)     #
 ##############################################
-# TODO: check that the user is not trying to merge F1 and F3
 
 # Intarsis root folder check
 if [ ! -f ".intarsis_folder" ]; then
@@ -99,4 +131,3 @@ merge_batch.csh merge_list batch_tops.config
 
 touch .intarsis_step04a &> /dev/null		# Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Merge Swaths $MERGE_SWATHS" >> ../intarsis.log
-
