@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# This program unwrap the phase using snaphu.csh or snaphu_interp.csh
+# It uses parallel to spawn the unwrapping across several threads.
+# A script called unwrap_intf.csh is needed in order to run this program.
+
+# TODO: include generation of unwrap_intf.csh, allow enable or disable interpolation
+# TODO: Allow unwrap for merged products.
+
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step03" ]; then
+        echo "You must run Intarsis_03_interferograms first"
+        exit
+fi
+
+# Getting parameters from intarsis.config
+if [ -f "intarsis.config" ]; then
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+COHERENCE=$(grep unwrap_coherence intarsis.config | awk '{print $2}')
+INTERPOLATION=$(grep unwrap_interpolation intarsis.config | awk '{print $2}')
+PARALLEL=$(grep use_parallel intarsis.config | awk '{print $2}')
+NUM_THREADS=$(grep num_cores intarsis.config | awk '{print $2}')
+fi
+
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=false
+elif [ -z $1 ]; then
+	echo "Must specify IW as parameters or configure it in intarsis.config"
+	echo "Example: Intarsis_05_unwrap F1"
+	exit
+else
+	echo "You must specify the IW as F1,F2 or F3"
+	exit
+fi
+
+# Report of the selected parameters
+echo "###################################################################"
+echo "Intarsis Unwrap parameters:"
+if $IW_config; then
+	echo "Swath to process: $IW (imported from intarsis.config)"
+else
+	echo "Swath to process: $IW (command line)"
+fi
+# Check if B_P and B_T are configured as valid numbers
+if [ $(echo "$COHERENCE > 0" | bc -l) ] && [ $(echo "$COHERENCE < 1" | bc -l) ] 2>/dev/null; then
+	echo "Coherence threshold for unwrap: $COHERENCE (imported from intarsis.config)"
+else
+	COHERENCE=0.15	
+	echo "Coherence threshold for unwrap: $COHERENCE (default value)"
+fi
+if $INTERPOLATION; then
+	echo "Selected interpolation for low coherence pixels"
+else
+	echo "No interpolation in unwrapping"
+fi
+
+if $PARALLEL; then
+	echo "Paralellization is on"
+	if [ -n "$NUM_THREADS" ] && [ "$NUM_THREADS" -eq "$NUM_THREADS" ] 2>/dev/null; then
+		echo "Number of CPU threads: $NUM_THREADS (imported from intarsis.config)"
+	else
+		NUM_THREADS=6
+		echo "Number of CPU threads: $NUM_THREADS (default value)"
+	fi
+else
+	echo "Paralelization is off"
+fi
+
+# Test for unwrap_intf.csh for parallelization
+which unwrap_intf.csh &> /dev/null
+if [ "$?" -eq 0 ]; then
+	echo "unwrap_intf.csh is found"
+else
+	echo "unwrap_intf.csh not found, exiting"
+	exit
+fi
+echo "###################################################################"
+
+echo "$(date "+%d/%m/%y %H:%M") - Run unwrap $IW" >> intarsis.log
+
+cd $IW/intf_all
+rm intflist
+ls -d 2*/ > intflist
+sed -i 's/\///g' intflist
+
+unwrap_parallel.csh intflist $NUM_THREADS
+
+rm log_*.txt # clean log files
+
+cd ../..
+
+touch .intarsis_step05 &> /dev/null # Intarsis step control file
+echo "$(date "+%d/%m/%y %H:%M") - Finished unwrap $IW" >> intarsis.log

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# This program reset the intf step for a specified IW.
+
+if [ -f "intarsis.config" ]; then
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+IW_config=true
+fi
+
+if [ -z $1 ] && [ -z $IW ]; then
+	echo "Must specify IW as parameter"
+	echo "Example: Intarsis_09_reset_intf F1"
+	exit
+
+fi
+
+if ! $IW_config; then
+	IW=$1
+fi
+
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	echo "Selected $IW"
+	echo "Removing interferograms from $IW"
+	cd $IW	
+	rm -rf intf* &> /dev/null
+	rm text* &> /dev/null
+	rm baseline.ps $IW/batch_tops.config $IW/gmt.history &> /dev/null
+	rm one.in &> /dev/null
+	rm corr_stack.grd std.grd mask_def.grd &> /dev/null 	# Delete also the mask files
+	rm .intarsis_step03 &> /dev/null
+	
+	echo "$(date "+%d/%m/%y %H:%M") - Reset intf $IW" >> intarsis.log
+else
+	echo "You must specify the IW as F[1,2,3]"
+	echo "Or specify it via intarsis.config"
+	exit
+fi
+

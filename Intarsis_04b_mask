@@ -1,0 +1,100 @@
+#!/bin/bash
+##############################################################################
+# This program generates a mask to avoid unwrapping of low coherence pixels. #
+# This step is not mandatary but reduces computation time.                   #
+# usage: Intarsis_04b_mask IW_number coherence_threshold                     #
+# example: Intarsis_04b_mask F2 0.1                                          #
+# also settings can be configured via intarsis.config                        #
+# check mask_def.grd from the selected IW (ex: ncview FX/mask_def.grd)       #
+##############################################################################
+
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step03" ]; then
+        echo "You must run Intarsis_03_interferograms first"
+        exit
+fi
+
+if [ -f "intarsis.config" ]; then
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+COHER=$(grep mask_level intarsis.config | awk '{print $2}')
+MASKING=$(grep use_mask intarsis.config | awk '{print $2}')
+fi
+
+if [ $MASKING = false ]; then
+	echo "Coherence mask is disabled in intarsis.config"
+	exit
+fi
+
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=false
+elif [ -z $1 ]; then
+	echo "Must specify IW as parameters or configure it in intarsis.config"
+	echo "Example: Intarsis_04b_mask F[1,2,3] 0.12"
+	exit
+else
+	echo "You must specify the IW as F1, F2 or F3 and the coherence threshold for the mask"
+	exit
+fi
+
+# Test coherence threshold
+if [[ $(echo "$COHER > 0" | bc -l) == 1 ]] && [[ $(echo "$COHER < 1" | bc -l) == 1 ]];then
+	COHER_config=true
+elif [[ $(echo "$2 > 0" | bc -l) == 1 ]] && [[ $(echo "$2 < 1" | bc -l) == 1 ]];then
+	COHER=$2
+	COHER_config=false
+else
+	echo "You must specify a coherence threshold between 0.001 and 0.999"
+	exit
+fi
+
+echo "$(date "+%d/%m/%y %H:%M") - Run Mask generation $IW" >> intarsis.log
+
+echo "###################################################################"
+echo "Intarsis masking parameters:"
+if $IW_config; then
+	echo "Swath to process: $IW (imported from intarsis.config)"
+else
+	echo "Swath to process: $IW (command line)"
+fi
+
+if $COHER_config; then
+	echo "Coherence threshold: $COHER (imported from intarsis.config)"
+else
+	echo "Coherence threshold: $COHER (from command line)"
+fi
+echo "###################################################################"
+
+cd $IW
+if [ ! -f corr_stack.grd ]; then
+	ls intf_all/201*/corr.grd > corr.grd_list
+	echo "Generating corr_stack.grd"
+	stack.csh corr.grd_list 1 corr_stack.grd std.grd
+else
+	echo "Detected previous corr_stack.grd"
+	echo "If you want to remove previous corr_stack.grd remove the file from $IW folder"
+	echo "Generating new mask with $COHER using old corr_stack.grd"
+fi
+gmt grdmath corr_stack.grd $COHER GE 0 NAN = mask_def.grd
+
+cd intf_all
+for i in $(ls -d */); do
+cd $i
+rm mask_def.grd &> /dev/null
+ln -s ../../mask_def.grd .
+cd ..
+done
+
+touch .intarsis_step04b &> /dev/null	# Intarsis step control file
+echo "$(date "+%d/%m/%y %H:%M") - Finished Mask generation $IW" >> intarsis.log

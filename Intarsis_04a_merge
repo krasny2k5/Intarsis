@@ -1,0 +1,94 @@
+#!/bin/bash
+################################################
+# Intarsis_04a_merge:                          #
+# This program merges several swaths from the  #
+# same track together. This is a optional step #
+# Joaquin Escayo jescayo@ucm.es November 2019  #
+################################################
+
+# TODO: import tracks to merge from intarsis.config and/or from command line and store in SWATHS array
+# TODO: check that the processing is already done for each swath
+
+SWATHS=(F2 F1 F3)
+
+# Sorting the SWATHS array
+IFS=$'\n' MERGE_SWATHS=($(sort <<<"${SWATHS[*]}"))
+unset IFS
+
+if [ ${#MERGE_SWATHS[@]} -lt 2 ]; then
+	echo "There is not enough swaths to merge. Please check configuration"
+	exit
+fi 
+
+echo "Merging ${#MERGE_SWATHS[@]} swaths: ${MERGE_SWATHS[*]}"
+
+##############################################
+#  Data check (folder,swaths, intf, etc)     #
+##############################################
+# TODO: check that the user is not trying to merge F1 and F3
+
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+	echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+	echo "Run Intarsis_01_file_preparation and other routines first"
+	exit
+fi
+
+# Intarsis step check
+if [ ! -f ".intarsis_step03" ]; then
+        echo "You must run Intarsis_03_interferograms first"
+        exit
+fi
+
+# Check that the interograms are ready for all swaths
+for i in ${MERGE_SWATHS[@]}; do
+	if [ ! -d $i/intf_all ]; then
+	echo "Missing interferogram folder for swath $i"
+	exit
+	else
+	echo "Found interferogram folder for $i"
+	fi
+done
+
+# Check there are the same interferograms in every swath
+for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
+	INTF=${i##*/}
+	echo $INTF
+	for i in ${MERGE_SWATHS[@]}; do 
+		if [ ! -d "$i/intf_all/$INTF" ]; then
+		echo "The interferograms are not the same across all the swaths. Please check $INTF"
+		exit
+		fi
+	done
+done
+
+#############################################
+# Creation of merge_list file               #
+#############################################
+
+# TODO: check if merged directory exists and ask for overwrite in that case
+rm -rf merged &> /dev/null
+mkdir merged 
+
+for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
+        INTF=${i##*/}
+	MASTER=$(echo $INTF | cut -c1-7)
+	SLAVE=$(echo $INTF | cut -c9- )
+	MASTER_FILE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep $MASTER"." | awk '{print $1}' | cut -c1-16)
+	SLAVE_FILE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep $SLAVE"." | awk '{print $1}' | cut -c1-16)
+	counter=0
+	unset line # clean line var
+	for swath in ${MERGE_SWATHS[@]}; do
+		line[$counter]=$(echo "../"$swath"/intf_all/"$INTF"/:"$MASTER_FILE"$swath:"$SLAVE_FILE$swath)
+		counter=$((counter+1))
+	done
+	# Generating the list
+	echo ${line[*]} | sed 's/\ ../,../g' >> merged/merge_list
+	cat merged/merge_list
+done
+
+
+
+touch .intarsis_step04a &> /dev/null		# Intarsis step control file
+echo "$(date "+%d/%m/%y %H:%M") - Finished Merge Swaths $MERGE_SWATHS" >> ../intarsis.log
+

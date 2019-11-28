@@ -1,0 +1,143 @@
+#!/bin/bash
+
+# This script generates the interferograms for a specified IW.
+# You must input as arguments the IW as F1, F2 or F3 and the master date as YYYYMMDD
+# Also, a master_image file containing the date of MM iif [ -f "intarsis.config" ]; thens possible to use.
+
+# Intarsis root folder check
+if [ ! -f ".intarsis_folder" ]; then
+        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "Run Intarsis_01_file_preparation and other routines first"
+        exit
+fi
+
+# Intarsis root folder check
+if [ ! -f ".intarsis_step02" ]; then
+        echo "You must run Intarsis_02_allign first"
+        exit
+fi
+
+
+if [ -f "intarsis.config" ]; then
+IW=$(grep swath_number intarsis.config | awk '{print $2}')
+MM=$(grep master_slc intarsis.config | awk '{print $2}')
+B_P=$(grep b_perp intarsis.config | awk '{print $2}')
+B_T=$(grep b_temp intarsis.config | awk '{print $2}')
+PARALLEL=$(grep use_parallel intarsis.config | awk '{print $2}')
+NUM_THREADS=$(grep num_cores intarsis.config | awk '{print $2}')
+fi
+
+if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
+elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+	IW=$1
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=false
+elif [ -z $1 ]; then
+	echo "Must specify IW and MM date as parameters or configure it in intarsis.config"
+	echo "Example: Intarsis_03_interferograms F[1,2,3] YYYYMMDD"
+	exit
+else
+	echo "You must specify the IW as F1, F2 or F3"
+	exit
+fi
+
+if [[ ! -z $MM ]] && [[ $(echo "$MM > 20140000" | bc -l) == 1 ]] && [[ $(echo "$MM < 20250000" | bc -l) == 1 ]]; then
+	MM_config=true
+elif [ -z $2 ]; then
+	echo "Must specify IW and MM date as parameters or configure it in intarsis.config"
+	echo "Example: Intarsis_03_interferograms F[1,2,3] YYYYMMDD"
+	exit
+elif [[ $(echo "$2 > 20140000" | bc -l) == 1 ]] && [[ $(echo "$2 < 20250000" | bc -l) == 1 ]]; then
+	MM=$2
+	MM_config=false
+else
+	echo "Error in Master Master date"
+	exit
+fi
+
+echo "###################################################################"
+echo "Intarsis interferogram settings:"
+if $MM_config; then
+	echo "Master master date: $MM (imported from intarsis.config)"
+else
+	echo "Master master date: $MM (command line)"
+fi
+if $IW_config; then
+	echo "Swath to process: $IW (imported from intarsis.config)"
+else
+	echo "Swath to process: $IW (command line)"
+fi
+
+# Check if B_P and B_T are configured as valid numbers
+if [ -n "$B_P" ] && [ "$B_P" -eq "$B_P" ] 2>/dev/null; then
+	echo "Perpendicular baseline: $B_P (imported from intarsis.config)"
+else
+	B_P=200	
+	echo "Perpendicular baseline: $B_P (default value)"
+fi
+if [ -n "$B_T" ] && [ "$B_T" -eq "$B_T" ] 2>/dev/null; then
+	echo "Temporal baseline: $B_T (imported from intarsis.config)"
+else
+	B_T=150
+	echo "Temporal baseline: $B_T (default value)"
+fi
+
+if $PARALLEL; then
+	echo "Paralellization is on"
+	if [ -n "$NUM_THREADS" ] && [ "$NUM_THREADS" -eq "$NUM_THREADS" ] 2>/dev/null; then
+		echo "Number of CPU threads: $NUM_THREADS (imported from intarsis.config)"
+	else
+		NUM_THREADS=4
+		echo "Number of CPU threads: $NUM_THREADS (default value)"
+	fi
+else
+	echo "Paralelization is off"
+fi
+echo "###################################################################"
+
+echo "$(date "+%d/%m/%y %H:%M") - Run Inteferogram generation for $IW" >> intarsis.log
+
+cd $IW
+
+# deleting previous interferograms
+rm -rf intf_all &> /dev/null
+
+select_pairs.csh baseline_table.dat $B_T $B_P # B_T and B_perp
+echo "Displaying last two lines of intf.in, check for the correct names"
+echo "######################################"
+cat intf.in | tail -2
+echo "######################################"
+echo "Total number of interferograms is $(cat intf.in | wc -l)"
+
+cp ../batch_tops.config .
+sed -i '/master_image/ c\master_image = S1_'$MM'_ALL_'$IW'' batch_tops.config
+cat batch_tops.config | grep master_image
+
+# Check if topo_ra.grd is already present in $IW directory:
+if [ ! -f topo/topo_ra.grd ]; then	
+	echo "No topo_ra.grd present in topo directory, generating topographic phase"
+	sed -i '/proc_stage/ c\proc_stage = 1' batch_tops.config
+	# Generating topographic phase
+	head -1 intf.in > one.in
+	# Removing first line from intf.in (to avoid regenerating the interferogram)
+	sed -i -e "1d" intf.in
+	intf_tops.csh one.in batch_tops.config
+else
+	echo "Detected topo_ra.grd from previous processing"
+	echo "Skipping geneation of topographic phase"
+fi
+
+# Generating all the interferograms
+
+	sed -i '/proc_stage/ c\proc_stage = 2' batch_tops.config
+
+intf_tops_parallel.csh intf.in batch_tops.config $NUM_THREADS
+
+rm intf_*log intf_*in 
+
+cd ..
+
+touch .intarsis_step03 &> /dev/null	# Intarsis control file
+echo "$(date "+%d/%m/%y %H:%M") - Finished Inteferogram generation for $IW" >> intarsis.log
