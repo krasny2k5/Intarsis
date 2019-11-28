@@ -79,15 +79,23 @@ for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
 	counter=0
 	unset line # clean line var
 	for swath in ${MERGE_SWATHS[@]}; do
-		line[$counter]=$(echo "../"$swath"/intf_all/"$INTF"/:"$MASTER_FILE"$swath:"$SLAVE_FILE$swath)
+		line[$counter]=$(echo "../"$swath"/intf_all/"$INTF"/:"$MASTER_FILE"$swath".PRM":"$SLAVE_FILE$swath".PRM")
 		counter=$((counter+1))
 	done
 	# Generating the list
 	echo ${line[*]} | sed 's/\ ../,../g' >> merged/merge_list
-	cat merged/merge_list
 done
 
+# TODO: put a line that contains the MM in the first line
 
+# Copying batch_tops.config from one swatch
+cp ${MERGE_SWATHS[0]}/batch_tops.config merged/
+
+# Linking dem to this
+ln -s ../topo/dem.grd merged/
+
+cd merged
+merge_batch.csh merge_list batch_tops.config
 
 touch .intarsis_step04a &> /dev/null		# Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Merge Swaths $MERGE_SWATHS" >> ../intarsis.log
