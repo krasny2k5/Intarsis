@@ -6,9 +6,6 @@
 # Joaquin Escayo jescayo@ucm.es November 2019  #
 ################################################
 
-# TODO: import tracks to merge from intarsis.config and/or from command line and store in SWATHS array
-# TODO: check that the processing is already done for each swath
-
 if [ -f "intarsis.config" ]; then
 MERGE=$(grep merge_swaths intarsis.config | awk '{print $2}')
 SWATHS=$(grep swaths_to_merge intarsis.config | awk '{print $2}')
@@ -144,8 +141,6 @@ ln -s ../topo/dem.grd merged/
 
 cd merged
 merge_batch.csh merge_list batch_tops.config
-
-exit
 
 touch .intarsis_step04a &> /dev/null		# Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Merge Swaths $MERGE_SWATHS" >> ../intarsis.log
