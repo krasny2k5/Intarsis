@@ -126,12 +126,15 @@ for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
 		counter=$((counter+1))
 	done
 	# Generating the list
-	echo ${line[*]} | sed 's/\ ../,../g' >> merged/merge_list
+	echo ${line[*]} | sed 's/\ ../,../g' >> merged/merge_tmp
 done
 
-# TODO: put a line that contains the MM in the first line
-MM_DATE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep $MM"." | awk '{print $1}' | cut -c4-11)
-
+# Put first lines that contain the MM SLC
+grep $MM merged/merge_tmp | sed -n '1!G;h;$p' > merged/merge_MM 	# Getting lines with the MM and reverse the list
+grep -v $MM merged/merge_tmp > merged/merge_rest 			# getting lines without MM
+cat merged/merge_MM > merged/merge_list
+cat merged/merge_rest >> merged/merge_list
+rm merged/merge_MM merged/merge_rest merged_tmp 			# cleanup of temporal files
 
 # Copying batch_tops.config from first swath
 cp ${MERGE_SWATHS[0]}/batch_tops.config merged/
