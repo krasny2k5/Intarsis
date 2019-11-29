@@ -12,6 +12,7 @@
 if [ -f "intarsis.config" ]; then
 MERGE=$(grep merge_swaths intarsis.config | awk '{print $2}')
 SWATHS=$(grep swaths_to_merge intarsis.config | awk '{print $2}')
+MM=$(grep master_slc intarsis.config | awk '{print $2}')
 fi
 
 if ! $MERGE; then
@@ -43,19 +44,10 @@ if [ ${#MERGE_SWATHS[@]} -lt 2 ]; then
 	exit
 fi 
 
-echo "###################################################################"
-echo "Intarsis swath merging parameters:"
-echo "Merging ${#MERGE_SWATHS[@]} swaths: ${MERGE_SWATHS[*]}"
-if $SWATHS_config; then
-echo "Imported from intarsis.config"
-else
-echo "Configured via command-line"
+if [ -z $MM ]; then
+	echo "Error on Master Master image, please check intarsis.config"
+	exit
 fi
-echo "###################################################################"
-
-##############################################
-#  Data check (folder,swaths, intf, etc)     #
-##############################################
 
 # Intarsis root folder check
 if [ ! -f ".intarsis_folder" ]; then
@@ -70,6 +62,20 @@ if [ ! -f ".intarsis_step03" ]; then
         exit
 fi
 
+echo "###################################################################"
+echo "Intarsis swath merging parameters:"
+echo "Merging ${#MERGE_SWATHS[@]} swaths: ${MERGE_SWATHS[*]}"
+if $SWATHS_config; then
+echo "Imported from intarsis.config"
+else
+echo "Configured via command-line"
+fi
+echo "Master-Master SLC date: $MM (Imported from intarsis.config)"
+echo "###################################################################"
+
+##############################################
+#  Data check (folder,swaths, intf, etc)     #
+##############################################
 # Check that the interograms are ready for all swaths
 for i in ${MERGE_SWATHS[@]}; do
 	if [ ! -d $i/intf_all ]; then
@@ -83,7 +89,6 @@ done
 # Check there are the same interferograms in every swath
 for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
 	INTF=${i##*/}
-	echo $INTF
 	for i in ${MERGE_SWATHS[@]}; do 
 		if [ ! -d "$i/intf_all/$INTF" ]; then
 		echo "The interferograms are not the same across all the swaths. Please check $INTF"
@@ -96,16 +101,27 @@ done
 # Creation of merge_list file               #
 #############################################
 
-# TODO: check if merged directory exists and ask for overwrite in that case
-rm -rf merged &> /dev/null
-mkdir merged 
+if [ -d "merged" ]; then
+	echo "Directory merged is present"
+	read -p "Do you want to overwrite it? Yes/No" -n 1 -r
+	echo    # (optional) move to a new line
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+	    	rm -rf merged &> /dev/null
+		mkdir merged 
+	else
+		echo "Check merged directory and try again"
+		exit
+	fi
+else
+	mkdir merged
+fi
 
 for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
         INTF=${i##*/}
 	MASTER=$(echo $INTF | cut -c1-7)
 	SLAVE=$(echo $INTF | cut -c9- )
-	MASTER_FILE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep $MASTER"." | awk '{print $1}' | cut -c1-16)
-	SLAVE_FILE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep $SLAVE"." | awk '{print $1}' | cut -c1-16)
+	MASTER_FILE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep -F $MASTER"." | awk '{print $1}' | cut -c1-16)
+	SLAVE_FILE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep -F $SLAVE"." | awk '{print $1}' | cut -c1-16)
 	counter=0
 	unset line # clean line var
 	for swath in ${MERGE_SWATHS[@]}; do
@@ -117,8 +133,10 @@ for i in $(ls -d ${MERGE_SWATHS[0]}/intf_all/2*); do
 done
 
 # TODO: put a line that contains the MM in the first line
+MM_DATE=$(cat ${MERGE_SWATHS[0]}/baseline_table.dat | grep $MM"." | awk '{print $1}' | cut -c4-11)
 
-# Copying batch_tops.config from one swatch
+
+# Copying batch_tops.config from first swath
 cp ${MERGE_SWATHS[0]}/batch_tops.config merged/
 
 # Linking dem to this
@@ -126,6 +144,8 @@ ln -s ../topo/dem.grd merged/
 
 cd merged
 merge_batch.csh merge_list batch_tops.config
+
+exit
 
 touch .intarsis_step04a &> /dev/null		# Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Merge Swaths $MERGE_SWATHS" >> ../intarsis.log
