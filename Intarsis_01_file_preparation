@@ -5,7 +5,7 @@
 # alias wgetasf 'wget --http-user=username --http-password=pass'
 # TODO: check if wgetasf is present and exit if it is not found
 
-mkdir data topo
+
 DEM=$(grep dem_filename intarsis.config | awk '{print $2}')
 
 if grep -q wgetasf $HOME/.cshrc ; then
@@ -26,16 +26,22 @@ if [ ! -f pins.ll ]; then
 	echo "pins.ll file is missing. Create in the program's folder and try again"
 	exit
 fi
+
+# Check for SAFE_filelist
 if [ ! -f SAFE_filelist ]; then
 	echo "SAFE_filelist file is missing. Create a SAFE_filelist containing full path to all SLC folers and try again"
 	exit
+else
+	sed -i 's/SAFE\//SAFE/g' SAFE_filelist 	# To remove trail / from each line.
 fi
+
 
 echo "$(date "+%d/%m/%y %H:%M") - Run directory preparation" > intarsis.log
 
 touch .intarsis_folder		# Creates a file to identify the folder as a intarsis root folder
 touch .intarsis_step01		# File of step 01 done
 
+mkdir data topo
 cp $DEM topo/dem.grd
 
 cp pins.ll data/
