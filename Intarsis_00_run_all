@@ -45,6 +45,10 @@ echo "Step 03: Interferograms"   &>> intarsis.runall.log
 echo "#########################" &>> intarsis.runall.log
 Intarsis_03_interferograms &>> intarsis.runall.log
 echo "#########################" &>> intarsis.runall.log
+echo "Step 04a: Merging"         &>> intarsis.runall.log
+echo "#########################" &>> intarsis.runall.log
+Intarsis_04a_merge               &>> intarsis.runall.log
+echo "#########################" &>> intarsis.runall.log
 echo "Step 04b: Masking"         &>> intarsis.runall.log
 echo "#########################" &>> intarsis.runall.log
 Intarsis_04b_mask &>> intarsis.runall.log

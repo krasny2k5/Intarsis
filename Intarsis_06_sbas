@@ -1,43 +1,49 @@
 #!/bin/bash
 
 # This script run SBAS module.
-# TODO: Allow this step for a merged product.
 
 # Intarsis root folder check
 if [ ! -f ".intarsis_folder" ]; then
-        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "You must run Intarsis_06_sbas inside a Intarsis root folder"
         echo "Run Intarsis_01_file_preparation and other routines first"
         exit
 fi
 
-# Intarsis previous step check
-if [ ! -f ".intarsis_step05" ]; then
-        echo "You must run Intarsis_05_unwrap first"
-        exit
-fi
-
-
 # Getting parameters from intarsis.config
 if [ -f "intarsis.config" ]; then
-IW=$(grep swath_number intarsis.config | awk '{print $2}')
+MERGE=$(grep merge_swaths intarsis.config | awk '{print $2}')
+if $MERGE; then IW=merged; INTF_FOLDER="../merged/2*"; else IW=$(grep swath_number intarsis.config | awk '{print $2}' | tr '[:lower:]' '[:upper:]'); INTF_FOLDER="../$IW/intf_all/2*"; fi
 ATM=$(grep atm_iter intarsis.config | awk '{print $2}')
 SMOOTH=$(grep smooth_level intarsis.config | awk '{print $2}')
+MM=$(grep master_slc intarsis.config | awk '{print $2}')
 fi
 
-if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
-	IWN=$(echo $IW | cut -c 2)
-	IW_config=true
-elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+if [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
 	IWN=$(echo $IW | cut -c 2)
 	IW_config=false
+elif [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
+elif [[ $1 == "merged" ]] || [[ $1 == "MERGED" ]]; then
+	IW=merged
+	IW_config=false
+elif [[ $IW == "merged" ]]; then
+	IW=merged
+	IW_config=true
 elif [ -z $1 ]; then
 	echo "Must specify IW as parameters or configure it in intarsis.config"
-	echo "Example: Intarsis_06_sbas F1"
+	echo "Example: Intarsis_05_unwrap F1"
 	exit
 else
 	echo "You must specify the IW as F1,F2 or F3"
 	exit
+fi
+
+# Intarsis previous step check
+if [ ! -f ".intarsis_step05_$IW" ]; then
+       	echo "You must run Intarsis_05_unwrap first"
+       	exit
 fi
 
 # Report of the selected parameters
@@ -64,16 +70,19 @@ echo "###################################################################"
 
 echo "$(date "+%d/%m/%y %H:%M") - Run SBAS $IW" >> intarsis.log
 
+# Directory generation
 rm -r SBAS &> /dev/null
 mkdir SBAS &> /dev/null
 cd SBAS
+
 echo "Generating scene.tab"
 awk '{$2=sprintf("%.0f",$2)}{print $2,$3}' ../$IW/baseline_table.dat > scene.tab
-
 echo "Generating intf.tab"
+
 rm intf.tab &> /dev/null
 touch intf.tab
-for z in $(ls -d ../$IW/intf_all/2*); do
+
+for z in $(ls -d $INTF_FOLDER); do
 i=$(basename $z)
 DATE1=$(echo $i | cut -c1-7)
 DATE2=$(echo $i | cut -c9-15)
@@ -83,31 +92,44 @@ B_PERP=$(echo $DATE1_BP - $DATE2_BP | bc -l)
 echo "$z/unwrap.grd $z/corr.grd $DATE1 $DATE2 $B_PERP" >> intf.tab
 done
 
+# TODO: check that all intfs has unwrap phase (should have it)
+
 echo "Getting SBAS Parameters"
-#USAGE: sbas intf.tab scene.tab N S xdim ydim [-atm ni] [-smooth sf] [-wavelength wl] [-incidence inc] [-range -rng] [-rms] [-dem]
-N_INTF=$(ls -1 -d ../$IW/intf_all/2* | wc -l)
+
+N_INTF=$(ls -1 -d $INTF_FOLDER | wc -l)
 N_SLC=$(cat scene.tab | wc -l)
-UNWRAP_GRD=$(echo "../$IW/intf_all/$(cat ../$IW/intf_all/intflist | tail -n 1)/unwrap.grd")
+UNWRAP_GRD=$(find $INTF_FOLDER -name corr.grd | tail -n 1)
 XDIM=$(gmt grdinfo $UNWRAP_GRD | grep x_max | awk '{print $11}')
+XMAX=$(gmt grdinfo $UNWRAP_GRD | grep x_max | awk '{print $5}')
+XMIN=$(gmt grdinfo $UNWRAP_GRD | grep x_min | awk '{print $3}')
 YDIM=$(gmt grdinfo $UNWRAP_GRD | grep y_max | awk '{print $11}')
-MM=$(cat ../$IW/raw/data.in | head -n 1 | cut -c 16-23)
-WAVELENGTH=$(cat ../$IW/raw/S1_"$MM"_ALL_$IW.PRM | grep radar_wavelength | awk '{print $3}')
-RNG_SAMP_RATE=$(cat ../$IW/raw/S1_"$MM"_ALL_$IW.PRM | grep rng_samp_rate | awk '{print $3}' | head -n 1)
-RANGE=888126 	# TODO: extract and calculate from Supermaster.prm
+MM_PRM=$(find ../ -name 'S1_'$MM'_ALL*PRM' | grep raw | head -n 1) 	# I take one PRM from MM. It should be the first swath (need to test) Radar wavelength and rng_samp_rate is the same for the three swaths, but near_range not .
+WAVELENGTH=$(cat $MM_PRM | grep radar_wavelength | awk '{print $3}')
+RNG_SAMP_RATE=$(cat $MM_PRM | grep rng_samp_rate | awk '{print $3}' | head -n 1)
+NEAR_RANGE=$(cat $MM_PRM | grep near_range | awk '{print $3}')
+RNG_PX_SIZE=$(echo "scale=6; 300000000/$RNG_SAMP_RATE/2" | bc)
+RANGE=$(echo "scale=6; $RNG_PX_SIZE*($XMIN+$XMAX)/2+$NEAR_RANGE" | bc)
 INC=40		# TODO: calculate incidence angle
-
-
 
 echo "# of interferograms: " $N_INTF
 echo "# of SLC: " $N_SLC
 echo "Dimensions of the scene: "$XDIM" x "$YDIM
+echo "X min: $XMIN , X max: $XMAX"
 echo "Wavelength: "$WAVELENGTH
+echo "Range sample rate: $RNG_SAMP_RATE"
+echo "Range pixel size: $RNG_PX_SIZE"
+echo "Near range: $NEAR_RANGE"
 echo "Range: "$RANGE
 echo "Incidence :" $INC
 echo "Smooth: " $SMOOTH
 
+exit
+
 echo "running SBAS code"
+#USAGE: sbas intf.tab scene.tab N S xdim ydim [-atm ni] [-smooth sf] [-wavelength wl] [-incidence inc] [-range -rng] [-rms] [-dem]
 sbas intf.tab scene.tab $N_INTF $N_SLC $XDIM $YDIM -atm $ATM -range $RANGE -incidence $INC -wavelength $WAVELENGTH -smooth $SMOOTH -rms -dem
 
-touch .intarsis_step06 &> /dev/null	# Intarsis step control file
-echo "$(date "+%d/%m/%y %H:%M") - Finished SBAS $IW" >> ../intarsis.log
+# Update log & create control files
+cd ..
+touch .intarsis_step06_$IW &> /dev/null	# Intarsis step control file
+echo "$(date "+%d/%m/%y %H:%M") - Finished SBAS $IW" >> intarsis.log

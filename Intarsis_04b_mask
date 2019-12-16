@@ -10,19 +10,15 @@
 
 # Intarsis root folder check
 if [ ! -f ".intarsis_folder" ]; then
-        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "You must run Intarsis_04b_mask inside a Intarsis root folder"
         echo "Run Intarsis_01_file_preparation and other routines first"
         exit
 fi
 
-# Intarsis previous step check
-if [ ! -f ".intarsis_step03" ]; then
-        echo "You must run Intarsis_03_interferograms first"
-        exit
-fi
-
+# Import variables from intarsis.config
 if [ -f "intarsis.config" ]; then
-#IW=$(grep swath_number intarsis.config | awk '{print $2}')
+MERGE=$(grep merge_swaths intarsis.config | awk '{print $2}')
+if $MERGE; then IW=merged; else IW=$(grep swath_number intarsis.config | awk '{print $2}' | tr '[:lower:]' '[:upper:]'); fi
 COHER=$(grep mask_level intarsis.config | awk '{print $2}')
 MASKING=$(grep use_mask intarsis.config | awk '{print $2}')
 fi
@@ -32,17 +28,19 @@ if [ $MASKING = false ]; then
 	exit
 fi
 
-# TODO: uppercase arguments to avoid multiple cases
-if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
-	IWN=$(echo $IW | cut -c 2)
-	IW_config=true
-elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+if [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
 	IWN=$(echo $IW | cut -c 2)
 	IW_config=false
+elif [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
 elif [[ $1 == "merged" ]] || [[ $1 == "MERGED" ]]; then
 	IW=merged
 	IW_config=false
+elif [[ $IW == "merged" ]]; then
+	IW=merged
+	IW_config=true
 elif [ -z $1 ]; then
 	echo "Must specify IW as parameters or configure it in intarsis.config"
 	echo "Example: Intarsis_04b_mask F[1,2,3] 0.12"
@@ -50,6 +48,19 @@ elif [ -z $1 ]; then
 else
 	echo "You must specify the IW as F1, F2, F3 or merged and the coherence threshold for the mask"
 	exit
+fi
+
+# Intarsis previous step check
+if [ $IW == "merged" ]; then
+	if [ ! -f ".intarsis_step04a" ]; then
+        	echo "You must run Intarsis_04a_merge first"
+        	exit
+	fi
+else
+	if [ ! -f ".intarsis_step03_$IW" ]; then
+        	echo "You must run Intarsis_03_interferograms first"
+        	exit
+	fi
 fi
 
 # Test coherence threshold
@@ -74,9 +85,9 @@ else
 fi
 
 if $COHER_config; then
-	echo "Coherence threshold: $COHER (imported from intarsis.config)"
+	echo "Correlation threshold: $COHER (imported from intarsis.config)"
 else
-	echo "Coherence threshold: $COHER (from command line)"
+	echo "Correlation threshold: $COHER (from command line)"
 fi
 echo "###################################################################"
 
@@ -116,5 +127,7 @@ fi
 cd ..
 done
 
-touch .intarsis_step04b &> /dev/null	# Intarsis step control file
+# Update log & create control files
+cd ..
+touch .intarsis_step04b_$IW &> /dev/null	# Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Mask generation $IW" >> intarsis.log

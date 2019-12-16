@@ -6,20 +6,13 @@
 
 # Intarsis root folder check
 if [ ! -f ".intarsis_folder" ]; then
-        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "You must run Intarsis_03_interferograms inside a Intarsis root folder"
         echo "Run Intarsis_01_file_preparation and other routines first"
         exit
 fi
 
-# Intarsis root folder check
-if [ ! -f ".intarsis_step02" ]; then
-        echo "You must run Intarsis_02_allign first"
-        exit
-fi
-
-
 if [ -f "intarsis.config" ]; then
-IW=$(grep swath_number intarsis.config | awk '{print $2}')
+IW=$(grep swath_number intarsis.config | awk '{print $2}'| tr '[:lower:]' '[:upper:]')
 MM=$(grep master_slc intarsis.config | awk '{print $2}')
 B_P=$(grep b_perp intarsis.config | awk '{print $2}')
 B_T=$(grep b_temp intarsis.config | awk '{print $2}')
@@ -41,6 +34,12 @@ elif [ -z $1 ]; then
 else
 	echo "You must specify the IW as F1, F2 or F3"
 	exit
+fi
+
+# Intarsis step 02 check
+if [ ! -f ".intarsis_step02_$IW" ]; then
+        echo "You must run Intarsis_02_allign $IW first"
+        exit
 fi
 
 if [[ ! -z $MM ]] && [[ $(echo "$MM > 20140000" | bc -l) == 1 ]] && [[ $(echo "$MM < 20250000" | bc -l) == 1 ]]; then
@@ -137,7 +136,7 @@ intf_tops_parallel.csh intf.in batch_tops.config $NUM_THREADS
 
 rm intf_*log intf_*in 
 
+# Update log & create control files
 cd ..
-
-touch .intarsis_step03 &> /dev/null	# Intarsis control file
+touch .intarsis_step03_$IW &> /dev/null	# Intarsis control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished Inteferogram generation for $IW" >> intarsis.log

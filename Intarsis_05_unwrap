@@ -5,37 +5,37 @@
 # A script called unwrap_intf.csh is needed in order to run this program.
 
 # TODO: include generation of unwrap_intf.csh, allow enable or disable interpolation
-# TODO: Allow unwrap for merged products.
 
 # Intarsis root folder check
 if [ ! -f ".intarsis_folder" ]; then
-        echo "You must run Intarsis_04a_merge inside a Intarsis root folder"
+        echo "You must run Intarsis_05_unwrap inside a Intarsis root folder"
         echo "Run Intarsis_01_file_preparation and other routines first"
-        exit
-fi
-
-# Intarsis previous step check
-if [ ! -f ".intarsis_step03" ]; then
-        echo "You must run Intarsis_03_interferograms first"
         exit
 fi
 
 # Getting parameters from intarsis.config
 if [ -f "intarsis.config" ]; then
-IW=$(grep swath_number intarsis.config | awk '{print $2}')
+MERGE=$(grep merge_swaths intarsis.config | awk '{print $2}')
+if $MERGE; then IW=merged; else IW=$(grep swath_number intarsis.config | awk '{print $2}' | tr '[:lower:]' '[:upper:]'); fi
 COHERENCE=$(grep unwrap_coherence intarsis.config | awk '{print $2}')
 INTERPOLATION=$(grep unwrap_interpolation intarsis.config | awk '{print $2}')
 PARALLEL=$(grep use_parallel intarsis.config | awk '{print $2}')
 NUM_THREADS=$(grep num_cores intarsis.config | awk '{print $2}')
 fi
 
-if [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
-	IWN=$(echo $IW | cut -c 2)
-	IW_config=true
-elif [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
+if [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
 	IW=$1
 	IWN=$(echo $IW | cut -c 2)
 	IW_config=false
+elif [[ "$IW" == "F1" ]] || [[ "$IW" == "F2" ]] || [[ "$IW" == "F3" ]]; then
+	IWN=$(echo $IW | cut -c 2)
+	IW_config=true
+elif [[ $1 == "merged" ]] || [[ $1 == "MERGED" ]]; then
+	IW=merged
+	IW_config=false
+elif [[ $IW == "merged" ]]; then
+	IW=merged
+	IW_config=true
 elif [ -z $1 ]; then
 	echo "Must specify IW as parameters or configure it in intarsis.config"
 	echo "Example: Intarsis_05_unwrap F1"
@@ -43,6 +43,19 @@ elif [ -z $1 ]; then
 else
 	echo "You must specify the IW as F1,F2 or F3"
 	exit
+fi
+
+# Intarsis previous step check
+if [ $IW == "merged" ]; then
+	if [ ! -f ".intarsis_step04a" ]; then
+        	echo "You must run Intarsis_04a_merge first"
+        	exit
+	fi
+else 
+	if [ ! -f ".intarsis_step03_$IW" ]; then
+        	echo "You must run Intarsis_03_interferograms first"
+        	exit
+	fi
 fi
 
 # Report of the selected parameters
@@ -88,9 +101,13 @@ else
 fi
 echo "###################################################################"
 
-echo "$(date "+%d/%m/%y %H:%M") - Run unwrap $IW" >> intarsis.log
+echo "$(date "+%d/%m/%y %H:%M") - Starting unwrap $IW" >> intarsis.log
 
-cd $IW/intf_all
+if [ $IW == "merged" ]; then
+	cd merged
+else
+	cd $IW/intf_all
+fi
 rm intflist
 ls -d 2*/ > intflist
 sed -i 's/\///g' intflist
@@ -99,7 +116,12 @@ unwrap_parallel.csh intflist $NUM_THREADS
 
 rm log_*.txt # clean log files
 
-cd ../..
+if [ $IW == "merged" ]; then
+	cd ..
+else
+	cd ../..
+fi
 
-touch .intarsis_step05 &> /dev/null # Intarsis step control file
+# Update log & create control files
+touch .intarsis_step05_$IW &> /dev/null # Intarsis step control file
 echo "$(date "+%d/%m/%y %H:%M") - Finished unwrap $IW" >> intarsis.log
