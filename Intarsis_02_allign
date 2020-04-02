@@ -11,6 +11,7 @@ if [ ! -f ".intarsis_folder" ]; then
         echo "Run Intarsis_01_file_preparation and other routines first"
         exit
 fi
+INTARSIS_FOLDER=$(pwd)
 
 # Intarsis previous step check
 if [ ! -f ".intarsis_step01" ]; then
@@ -23,6 +24,7 @@ echo "intarsis.config found, importing variables"
 IW=$(grep swath_number intarsis.config | awk '{print $2}'| tr '[:lower:]' '[:upper:]')
 MM=$(grep master_slc intarsis.config | awk '{print $2}')
 ESD=$(grep use_esd intarsis.config | awk '{print $2}')
+ESD_MODE=$(grep esd_mode intarsis.config | awk '{print $2}')
 fi
 
 if [[ "$1" == "F1" ]] || [[ "$1" == "F2" ]] || [[ "$1" == "F3" ]]; then
@@ -57,6 +59,11 @@ else
 	exit
 fi
 
+if [ -z $ESD ]; then
+	echo "Disabling ESD mode (default)"
+	ESD=false
+fi
+
 echo "###################################################################"
 echo "Intarsis corregistration settings:"
 if $MM_config; then
@@ -72,6 +79,21 @@ fi
 
 if $ESD; then
 	echo "ESD for fine corregistration is enabled"
+	if [ -z $ESD_MODE ]; then
+		echo "ESD mode is not defined. Configure it in intarsis.config or disable ESD"
+		exit
+	else 
+		if [ $ESD_MODE == "0" ]; then
+			echo "ESD mode is set to: 0 (average)"
+		elif [ $ESD_MODE == "1" ]; then
+			echo "ESD mode is set to: 1 (median)"
+		elif [ $ESD_MODE == "2" ]; then
+			echo "ESD mode is set to: 2 (interpolation)"
+		else
+			echo "Invalid ESD mode, please use 0, 1 or 2"
+			exit
+		fi
+	fi 
 else
 	echo "ESD is disabled"
 fi
@@ -97,7 +119,7 @@ prep_data_linux.csh
 
 # RUN FIRST STEP OF PREPROC_BATCH (generates baseline_table.dat)
 if $ESD; then
-preproc_batch_tops_esd.csh data.in dem.grd 1
+preproc_batch_tops_esd.csh data.in dem.grd 1 $ESD_MODE
 else
 preproc_batch_tops.csh data.in dem.grd 1
 fi
@@ -110,7 +132,7 @@ mv data.in_temp data.in
 
 # RUN SECOND STEP OF PREPROC_BATCH
 if $ESD; then
-preproc_batch_tops_esd.csh data.in dem.grd 2
+preproc_batch_tops_esd.csh data.in dem.grd 2 $ESD_MODE
 else
 preproc_batch_tops.csh data.in dem.grd 2
 fi
@@ -127,6 +149,6 @@ done
 cp baseline_table.dat ..
 
 # Update log & create control files
-cd ../..
+cd $INTARSIS_FOLDER
 touch .intarsis_step02_$IW &> /dev/null	# Creates a file to identify step02 done
 echo "$(date "+%d/%m/%y %H:%M") - Finished Allign $IW" >> intarsis.log
